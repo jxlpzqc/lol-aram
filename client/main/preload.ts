@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import leagueBridge from './services/leagueBridge'
+import autoUpdateBridge from './services/autoupdateBridge'
 
 const handler = {
   send(channel: string, value: unknown) {
@@ -23,3 +24,7 @@ export type IpcHandler = typeof handler
 contextBridge.exposeInMainWorld('league', leagueBridge);
 
 export type LeagueHandler = typeof leagueBridge;
+
+contextBridge.exposeInMainWorld('autoupdate', autoUpdateBridge)
+
+export type AutoUpdateHandler = typeof autoUpdateBridge;

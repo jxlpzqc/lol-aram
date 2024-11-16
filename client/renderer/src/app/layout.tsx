@@ -2,7 +2,7 @@
 import localFont from "next/font/local";
 import "./globals.css";
 import { Suspense, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import sessionService from "../services/session"
 
 const geistSans = localFont({
@@ -23,9 +23,10 @@ export default function RootLayout({
 }>) {
 
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!sessionService.registed) {
+    if (!sessionService.registed && pathname !== "/update" && pathname !== '/update.html') {
       router.push("/user");
     }
   });

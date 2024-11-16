@@ -43,3 +43,8 @@ body {
   border: 1px solid #ffe18a;
   outline: none;
 }
+
+.typography ol,.typography ul {
+  list-style: auto;
+  margin-left: 1.2em;
+}
