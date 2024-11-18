@@ -1,0 +1,341 @@
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	width="750px" height="550px" viewBox="0 100 750 550" xml:space="preserve">
+	<defs>
+		<style>
+			@keyframes rotateGearRing {
+				from { transform: rotate(0deg); }
+				to { transform: rotate(30deg); }
+			}
+
+			@keyframes rotateDashedRing {
+				from { transform: rotate(0deg); }
+				to { transform: rotate(180deg); }
+			}
+
+			@keyframes grayscaleFilter {
+				from { filter: grayscale(0); -webkit-filter: grayscale(0); }
+				to { filter: grayscale(100%); -webkit-filter: grayscale(100%); }
+			}
+
+			@keyframes rotatePlayer {
+				from { transform: rotate(0deg); }
+				to { transform: rotate(45deg); }
+			}
+
+			@keyframes rotateEnemy {
+				from { transform: rotate(0deg); }
+				to { transform: rotate(-45deg); }
+			}
+
+			@keyframes fadeIn {
+				from { opacity: 0; display: inline !important; }
+				to { opacity: 1; display: inline !important; }
+			}
+
+			@keyframes fadeOut {
+				from { opacity: 1; }
+				to { opacity: 0; display: none !important; }
+			}
+
+			@keyframes scaleDown {
+				from { transform: scale(1); }
+				to { transform: scale(0.8); }
+			}
+
+			@keyframes scaleIntro {
+				from { transform: scale(1.15); }
+				to { transform: scale(1); }
+			}
+
+			@keyframes glowIntro {
+			  0% {
+			    opacity: 0.7;
+					filter: brightness(1) grayscale(100%) drop-shadow(0 0 10px rgba(255,255,255,0.8));
+					-webkit-filter: brightness(1) grayscale(100%) drop-shadow(0 0 10px rgba(255,255,255,0.8));
+			  }
+			  30% {
+			    opacity: 1;
+					filter: brightness(3) grayscale(100%) drop-shadow(0 0 10px rgba(255,255,255,0.8));
+					-webkit-filter: brightness(3) grayscale(100%) drop-shadow(0 0 10px rgba(255,255,255,0.8));
+			  }
+			  90% {
+					opacity: 1;
+					filter: brightness(3) grayscale(100%) drop-shadow(0 0 10px rgba(255,255,255,0.8));
+					-webkit-filter: brightness(3) grayscale(100%) drop-shadow(0 0 10px rgba(255,255,255,0.8));
+				}
+			  100% {
+					opacity: 0.75;
+					filter: brightness(1) grayscale(0);
+					-webkit-filter: brightness(1) grayscale(0);
+				}
+			}
+
+			@keyframes dashedRingIntro {
+			  0% {
+			    opacity: 0.5;
+			    transform: scale(1.5);
+			  }
+			  35% {
+			    opacity: 0.8;
+			    transform: scale(0.85);
+			  }
+			  65% {
+			    opacity: 0.8;
+			    transform: scale(0.85);
+			  }
+			  100% {
+			    opacity: 0.5;
+			    transform: scale(1);
+			  }
+			}
+
+			.svg-ring-color {
+				mix-blend-mode: color;
+			}
+
+			#main-gear-container {
+				transform-origin: 50%;
+				opacity: 0;
+				transform: scale(1);
+			}
+
+			#intro-dashed-container {
+				transform-origin: 50%;
+				transform: scale(1);
+			}
+
+			#intro-gear-container {
+				transform-origin: 50%;
+				transform: scale(1);
+			}
+
+			.gear-ring-rotation {
+				animation: rotateGearRing 20s linear infinite;
+				transform-origin: 275px;
+			}
+
+			.dashed-ring-rotation {
+				r: 234.5;
+				transition: r 300ms cubic-bezier(0, 0.6, 0.1, 1);
+				<!-- animation: rotateDashedRing 2s linear infinite; -->
+				transform-origin: 300px;
+			}
+
+			.scale-down-container {
+				transform: scale(0.001);
+			}
+
+			.slash-line-rotation {
+				transform-origin: 275px;
+				transform: rotate(0deg);
+			}
+
+			.slash-ring-rotation {
+				transform-origin: 275px;
+				transform: rotate(var(--rotatePrimaryDeg));
+			}
+
+			.ban-line.top {
+				transform: translateY(-277px);
+			}
+
+			.ban-line.bottom {
+				transform: translateY(277px);
+			}
+
+			.dashed-ring-symbol {
+				opacity: 0.5;
+				transform: translateX(0);
+			}
+
+			.ban-gear-ring-symbol,
+			.dashed-ring-symbol {
+				transition: transform 300ms cubic-bezier(0, 0.6, 0.1, 1);
+			}
+
+			svg.is-animating {
+				animation: grayscaleFilter 200ms 240ms cubic-bezier(0, 0.6, 0.1, 1) forwards;
+			}
+
+			svg.is-animating .ban-line {
+				transition: transform 300ms cubic-bezier(0, 0.6, 0.1, 1), opacity 250ms linear;
+				transform: translateY(0);
+			}
+
+			svg.is-waiting .gear-ring-rotation,
+			svg.is-animating:not(.is-showing-grid) .gear-ring-rotation {
+				animation-play-state: paused;
+			}
+
+			svg.is-showing-grid .ban-line {
+				opacity: 0;
+			}
+
+			svg.is-player-team.is-rotating .slash-line-rotation {
+				animation: rotatePlayer 250ms linear;
+				animation-fill-mode: forwards;
+			}
+
+			svg.is-enemy-team.is-rotating .slash-line-rotation {
+				animation: rotateEnemy 250ms linear;
+				animation-fill-mode: forwards;
+			}
+
+			svg.is-rotating .slash-ring-rotation {
+				transition: transform 250ms linear;
+			}
+
+			svg.is-showing-grid .ban-gear-ring-symbol.left,
+			svg.is-showing-grid .dashed-ring-symbol.left {
+				transform: translateX(-60px);
+			}
+
+			svg.is-showing-grid .ban-gear-ring-symbol.right,
+			svg.is-showing-grid .dashed-ring-symbol.right {
+				transform: translateX(60px);
+			}
+
+			svg.is-showing-grid .dashed-ring-circle {
+				r: 292.5;
+			}
+
+			svg.is-animating.is-ban-completed {
+				animation: glowIntro 400ms 200ms cubic-bezier(0, 1, 0, 1);
+				animation-fill-mode: forwards;
+			}
+
+			svg.is-animating.is-ban-completed #main-gear-container {
+				animation:
+					fadeOut 300ms linear,
+					scaleDown 400ms linear;
+				animation-fill-mode: forwards;
+			}
+
+			svg.is-animating.is-ban-completed #intro-dashed-container {
+				animation:
+					fadeIn 100ms linear,
+					dashedRingIntro 450ms 200ms linear;
+				animation-fill-mode: forwards;
+			}
+
+			svg.is-animating.is-ban-completed #intro-gear-container {
+				animation:
+					fadeIn 100ms linear,
+					scaleIntro 300ms 100ms linear;
+				animation-fill-mode: forwards;
+			}
+		</style>
+
+		<mask id="svg-ring-gear-mask" maskUnits="objectBoundingBox" x="0" y="0" width="1" height="1">
+			<g class="scale-down-container">
+				<g class="slash-ring-rotation" opacity="0.75">
+					<g class="gear-ring-rotation">
+						<path
+							id="svg-ring-gear-inner-path"
+							fill="none"
+							stroke="#fff"
+							stroke-width="2"
+							stroke-miterlimit="10"
+							d="M546.432,290.565
+								v-31.131l-6.086,6.09c-1.457-41.448-12.401-80.471-30.741-114.972l8.246,2.21L502.286,125.8l-2.217,8.274
+								c-21.334-33.995-50.145-62.815-84.148-84.145l8.279-2.216l-26.959-15.565l2.21,8.247
+								c-34.511-18.34-73.528-29.289-114.972-30.742l6.086-6.09h-31.131l6.09,6.09c-41.448,1.453-80.471,12.402-114.972,30.742
+								l2.21-8.247L125.8,47.714l8.274,2.216C100.08,71.26,71.26,100.08,49.93,134.075l-2.216-8.274l-15.565,26.963l8.247-2.21
+								c-18.34,34.501-29.289,73.524-30.742,114.972l-6.09-6.09v31.131l6.09-6.086c1.453,41.443,12.402,80.461,30.742,114.972
+								l-8.247-2.21L47.714,424.2l2.216-8.279c21.33,34.004,50.15,62.814,84.145,84.148l-8.274,2.217l26.963,15.564l-2.21-8.246
+								c34.501,18.34,73.524,29.284,114.972,30.742l-6.09,6.085h31.131l-6.086-6.085c41.443-1.458,80.461-12.402,114.972-30.742
+								l-2.21,8.246l26.959-15.564l-8.279-2.217c34.004-21.334,62.814-50.145,84.148-84.148l2.217,8.279l15.564-26.959l-8.246,2.21
+								c18.34-34.511,29.284-73.528,30.741-114.972L546.432,290.565z"/>
+					</g>
+				</g>
+				<circle cx="275" cy="275" r="273" fill="none" stroke="#fff" stroke-width="4"/>
+			</g>
+		</mask>
+
+		<mask id="svg-dashed-ring-mask" maskUnits="objectBoundingBox" x="0" y="0" width="1" height="1">
+      <g class="scale-down-container">
+				<g class="dashed-ring-rotation">
+					<circle
+						class="dashed-ring-circle"
+						fill="none" stroke="#cdbe91" stroke-width="15" stroke-miterlimit="10" stroke-dasharray="1.002,6.011"
+						cx="300" cy="300" r="234.5"/>
+					</g>
+			</g>
+    </mask>
+
+		<mask id="svg-slash-mask" maskUnits="objectBoundingBox" x="0" y="0" width="1" height="1">
+			<g class="scale-down-container">
+				<g class="slash-line-rotation" opacity="0.75">
+					<line class="ban-line top" fill="none" stroke="#fff" stroke-width="4" stroke-miterlimit="10" x1="10" y1="270" x2="546" y2="270"/>
+					<line class="ban-line bottom" fill="none" stroke="#fff" stroke-width="4" stroke-miterlimit="10" x1="4" y1="282" x2="540" y2="282"/>
+				</g>
+			</g>
+		</mask>
+
+		<clipPath id="circle-container-mask">
+			<circle cx="0.275" cy="0.275" r="0.275" fill="#fff"/>
+		</clipPath>
+
+		<linearGradient id="linear-gradient" x1="280" y1="0" x2="280" y2="0.550" gradientUnits="userSpaceOnUse">
+			<stop offset="0.18" stop-color="#785a28"/>
+			<stop offset="0.213" stop-color="#785a28"/>
+			<stop offset="0.467" stop-color="#765c29"/>
+			<stop offset="0.547" stop-color="#6b5424"/>
+			<stop offset="0.82" stop-color="#463714"/>
+		</linearGradient>
+
+		<filter id="filter" x="-5" y="-5" width="570" height="570" filterUnits="userSpaceOnUse">
+			<feOffset result="offset" in="SourceAlpha"/>
+			<feGaussianBlur result="blur" stdDeviation="3.162"/>
+			<feFlood result="flood" flood-opacity="0.5"/>
+			<feComposite result="composite" operator="in" in2="blur"/>
+			<feBlend result="blend" in="SourceGraphic"/>
+		</filter>
+
+		<symbol id="ban-slash-symbol" viewBox="0 0 0.550 0.550" x="0" y="0" width="0.550" height="0.550">
+			<g clip-path="url(#circle-container-mask)">
+				<g class="svg-background-color" mask="url(#svg-slash-mask)">
+					<rect x="0" y="0" width="0.550" height="0.550" fill="url(#linear-gradient)"/>
+					<rect x="0" y="0" width="0.550" height="0.550" fill="#362a0f"/>
+				</g>
+			</g>
+		</symbol>
+
+		<symbol id="ban-gear-ring-symbol-left" viewBox="0 0 0.275 0.550" x="0" y="0" width="0.275" height="0.550">
+			<g class="svg-background-color" mask="url(#svg-ring-gear-mask)">
+				<rect x="0" y="0" width="0.275" height="0.550" fill="url(#linear-gradient)"/>
+				<rect class="svg-ring-color" x="0" y="0" width="0.275" height="0.550" fill="#362a0f"/>
+			</g>
+		</symbol>
+
+		<symbol id="ban-gear-ring-symbol-right" viewBox="0.275 0 0.275 0.550">
+			<g class="svg-background-color" mask="url(#svg-ring-gear-mask)">
+				<rect x="0.275" y="0" width="0.275" height="0.550" fill="url(#linear-gradient)"/>
+				<rect class="svg-ring-color" x="0.275" y="0" width="0.275" height="0.550" fill="#362a0f"/>
+			</g>
+		</symbol>
+
+    <symbol id="dashed-ring-symbol-left" viewBox="0 0 0.3 0.6">
+			<rect mask="url(#svg-dashed-ring-mask)" fill="#cdbe91" x="0" y="0" width="0.3" height="0.6"/>
+		</symbol>
+
+		<symbol id="dashed-ring-symbol-right" viewBox="0.3 0 0.3 0.6">
+			<rect mask="url(#svg-dashed-ring-mask)" fill="#cdbe91" x="0.3" y="0" width="0.3" height="0.6"/>
+		</symbol>
+	</defs>
+	<g id="main-gear-container">
+		<use xlink:href="#dashed-ring-symbol-left" class="dashed-ring-symbol left" x="75" y="75" width="300" height="600"/>
+		<use xlink:href="#dashed-ring-symbol-right" class="dashed-ring-symbol right" x="375" y="75" width="300" height="600"/>
+		<use xlink:href="#ban-slash-symbol" x="100" y="100" width="550" height="550"/>
+		<use xlink:href="#ban-gear-ring-symbol-left" class="ban-gear-ring-symbol left" x="100" y="100" width="275" height="550"/>
+		<use xlink:href="#ban-gear-ring-symbol-right" class="ban-gear-ring-symbol right" x="375" y="100" width="275" height="550"/>
+	</g>
+	<g id="intro-dashed-container">
+		<use xlink:href="#dashed-ring-symbol-left" class="dashed-ring-symbol left" x="75" y="75" width="300" height="600"/>
+		<use xlink:href="#dashed-ring-symbol-right" class="dashed-ring-symbol right" x="375" y="75" width="300" height="600"/>
+	</g>
+	<g id="intro-gear-container">
+		<use xlink:href="#ban-gear-ring-symbol-left" class="ban-gear-ring-symbol left" x="100" y="100" width="275" height="550"/>
+		<use xlink:href="#ban-gear-ring-symbol-right" class="ban-gear-ring-symbol right" x="375" y="100" width="275" height="550"/>
+	</g>
+</svg>

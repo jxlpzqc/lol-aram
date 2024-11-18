@@ -1,0 +1,33 @@
+.container {
+    @apply w-full h-full;
+}
+
+.random-btn {
+    height: 80px;
+    width: 250px;
+    background: no-repeat center / contain url('/images/button-find-match.png');
+}
+
+.random-btn:hover {
+    background: no-repeat center / contain url('/images/button-find-match-over.png');
+}
+
+.random-btn:active {
+    background: no-repeat center / contain url('/images/button-find-match-down.png');
+}
+
+.random-btn img {
+    height: 2rem;
+}
+
+.player-portraits {
+    background: no-repeat center / contain url('/images/player-object-ring.png');
+}
+
+.player-card {
+    mask: linear-gradient(to right, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
+}
+
+.player-card-right {
+    mask: linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
+}
