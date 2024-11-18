@@ -11,11 +11,11 @@
 !.yarn/versions
 
 # testing
-/coverage
+/renderer/coverage
 
 # next.js
-/.next/
-/out/
+/renderer/.next/
+/renderer/out/
 
 # production
 /build
@@ -39,4 +39,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/public/assets
+/renderer/public/assets
+/app

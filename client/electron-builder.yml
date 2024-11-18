@@ -1,0 +1,12 @@
+appId: tech.chengzi.lol-aram
+productName: LOL ARAM
+copyright: Copyright © Cheng Ziqiu
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null

@@ -3,7 +3,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import RoomWaiting from './components/RoomWaiting';
-import { changeSeat, getRoomSocket, startGame, UserDTO } from '@/services/room';
+import { changeSeat, getRoomSocket, startGame, UserDTO } from '../../services/room';
 import LeagueButtonGroup from './components/LeagueButtonGroup';
 import ChampionPick from './components/ChampionPick';
 

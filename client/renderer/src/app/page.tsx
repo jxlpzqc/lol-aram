@@ -1,5 +1,5 @@
 "use client"
-import { getAllRooms, RoomDTO } from "@/services/room";
+import { getAllRooms, RoomDTO } from "../services/room";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 

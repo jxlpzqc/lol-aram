@@ -1,6 +1,6 @@
 import styles from './ChampionPick.module.css'
-import champions from '../../../../public/assets/champions.json'
-import { UserDTO } from '@/services/room';
+import champions from '../../../../../public/assets/champions.json'
+import { UserDTO } from '../../../services/room';
 
 type PlayerCardProps = {
     isRight?: boolean;
