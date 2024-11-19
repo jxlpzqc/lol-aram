@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import session from "./session";
 
 export type RoomDTO = {
     id: string;
@@ -36,11 +37,9 @@ export type UserDTO = {
     gameData?: GameData;
 };
 
-// const baseURL = "lol.fancybag.cn:22001";
-const baseURL = "localhost:5000";
 
 export async function getAllRooms(): Promise<RoomDTO[]> {
-    const ret = await fetch("http://" + baseURL + "/rooms")
+    const ret = await fetch("http://" + session.server + "/rooms")
     const data = await ret.json();
     return data as RoomDTO[];
 }
@@ -52,32 +51,41 @@ export type RoomSocketOpts = {
     userName: string,
     userGameID: string,
     onRoom?: (data: SocketRoomDTO) => void,
-    onDisconnect?: () => void,
+    onConnect?: () => void,
+    onDisconnect?: (reason: string) => void,
     onTime?: (data: { time: number }) => void,
     onPlay?: () => void,
     onEnd?: () => void,
 }
 
 export function getRoomSocket({
-    roomID, roomName, userID, userName, userGameID, onDisconnect, onRoom, onPlay, onEnd, onTime
+    roomID, roomName, userID, userName, userGameID, onDisconnect, onRoom, onPlay, onEnd, onTime,
+    onConnect
 }: RoomSocketOpts): Socket {
 
-    const socket = io(`ws://${baseURL}/room`, {
+    const socket = io(`ws://${session.server}/room`, {
         query: {
             roomID,
             roomName,
             id: userID,
             name: userName,
             gameID: userGameID,
-        }
+        },
+        timeout: 10000
     });
     socket.on("connect", () => {
         console.log("connected");
+        onConnect?.();
     });
 
-    socket.on("disconnect", () => {
+    socket.on('connect_error', (error) => {
+        console.log("connect_error", error);
+        onDisconnect?.(error.message);
+    });
+
+    socket.on("disconnect", (data) => {
         console.log("disconnected");
-        onDisconnect?.();
+        onDisconnect?.(data);
     });
 
     socket.on("roomUpdated", (data) => {

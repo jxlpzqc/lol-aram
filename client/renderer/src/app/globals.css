@@ -32,3 +32,14 @@ body {
   color: #ffe18a;
 }
 
+.league-input {
+  @apply text-slate-200;
+  background: #1e232a;
+  border: 1px solid #f5d185;
+  padding: 4px 8px;
+}
+
+.league-input:focus {
+  border: 1px solid #ffe18a;
+  outline: none;
+}

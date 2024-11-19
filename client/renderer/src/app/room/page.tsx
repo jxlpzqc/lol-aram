@@ -4,12 +4,44 @@ import { useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import RoomWaiting from './components/RoomWaiting';
 import { changeSeat, getRoomSocket, startGame, UserDTO } from '../../services/room';
-import LeagueButtonGroup from './components/LeagueButtonGroup';
+import LeagueButtonGroup from '../../components/LeagueButtonGroup';
 import ChampionPick from './components/ChampionPick';
+
+function Connecting() {
+  return <div className='flex flex-col w-full h-screen gap-8 items-center justify-center'>
+    <img src='/images/lol_icon.png' className='w-40 h-40' />
+    <div className='flex items-center justify-center'>
+      <img src='/images/spinner.png' className='w-16 h-16 animate-spin' />
+      <div className='text-white p-4 rounded-lg'>
+        连接到房间中...
+      </div>
+    </div>
+  </div>
+}
+
+function ConnectionFailed({ connectionFailedReason }: { connectionFailedReason: string }) {
+  const router = useRouter();
+  return <div className='flex flex-col w-full h-screen gap-8 items-center justify-center'>
+    <img src='/images/lol_icon.png' className='w-40 h-40' />
+    <div className='flex items-center justify-center'>
+      <div className='text-white p-4 rounded-lg'>
+        连接失败：{connectionFailedReason}
+      </div>
+    </div>
+    <div>
+      <button className='league-btn' onClick={() => {
+        router.back();
+      }}>返回</button>
+    </div>
+  </div>
+}
 
 export default function Room() {
   const params = useSearchParams();
   const router = useRouter();
+
+  const [connectionStatus, setConnectionStatus] = useState(0);
+  const [connectionFailedReason, setConnectionFailedReason] = useState('');
 
   const [seats, setSeats] = useState<(UserDTO | null)[]>([]);
   const [remaingTime, setRemainingTime] = useState(-1);
@@ -47,6 +79,13 @@ export default function Room() {
       },
       onEnd: () => {
         setIsPlaying(false);
+      },
+      onDisconnect: (reason) => {
+        setConnectionStatus(2);
+        setConnectionFailedReason(reason);
+      },
+      onConnect: () => {
+        setConnectionStatus(1);
       }
     })
 
@@ -55,8 +94,11 @@ export default function Room() {
     }
   }, []);
 
-
-
+  if (connectionStatus === 0) {
+    return <Connecting />;
+  } else if (connectionStatus === 2) {
+    return <ConnectionFailed connectionFailedReason={connectionFailedReason} />;
+  }
 
   return <div>
     {
@@ -71,6 +113,8 @@ export default function Room() {
             <LeagueButtonGroup text='开始游戏' onConfirm={async () => {
               if (socket.current)
                 await startGame(socket.current);
+            }} onCancel={() => {
+              router.replace('/');
             }} />
 
           </div>

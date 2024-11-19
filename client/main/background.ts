@@ -2,6 +2,7 @@ import path from 'path'
 import { app, ipcMain } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers'
+import { registLeagueService } from './services/leagueMainRegister'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -38,3 +39,5 @@ app.on('window-all-closed', () => {
 ipcMain.on('message', async (event, arg) => {
   event.reply('message', `${arg} World!`)
 })
+
+registLeagueService();

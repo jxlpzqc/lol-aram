@@ -2,16 +2,30 @@
 import { getAllRooms, RoomDTO } from "../services/room";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import sessionService from "../services/session";
+import LoadingPage from "../components/LoadingPage";
+import FailPage from "../components/FailPage";
 
 
 export default function Home() {
   const [rooms, setRooms] = useState<RoomDTO[]>([]);
 
+  const [status, setStatus] = useState(0);
+  const [failMsg, setFailMsg] = useState("");
+
   const fetchRooms = async () => {
+    if (!sessionService.registed) {
+      setStatus(2);
+      setFailMsg("请先配置服务器！");
+      return;
+    }
+    setStatus(0);
     try {
       setRooms(await getAllRooms());
+      setStatus(1);
     } catch (e) {
-      console.error(e);
+      setStatus(2);
+      setFailMsg(`获取房间列表失败！ ${e}`);
     }
   }
 
@@ -34,11 +48,39 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem("id") === null) {
+    if (!sessionService.registed) {
       router.push("/user");
     }
   });
 
+  let body;
+
+  if (status === 0) {
+    body = <LoadingPage noPage message="正在获取..." />
+  } else if (status === 2) {
+    body = <FailPage noPage reason={failMsg} buttonTitle="重试" onButtonClick={fetchRooms} />
+  } else {
+    body = <table className="table-auto w-full">
+      <thead>
+        <tr>
+          <th className="text-left py-4 pl-2">房间名</th>
+          <th className="text-left py-4">状态</th>
+          <th className="text-left py-4">人数</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rooms.map((room) => (
+          <tr className="hover:outline-[#785a28] hover:outline" key={room.id} onClick={() => { gotoRoom(room.id) }}>
+            <td className="py-2 pl-2">{room.name}</td>
+            <td className="py-2">{room.status == 'waiting' ? "等待中" : "游戏中"}</td>
+            <td className="py-2">{room.playerNumber} / 10 </td>
+          </tr>
+        ))}
+      </tbody>
+
+    </table>
+
+  }
 
   return (
     <div className="m-8">
@@ -46,34 +88,11 @@ export default function Home() {
       <div className="flex justify-end">
         <button className="league-btn mx-4" onClick={fetchRooms}>刷新</button>
         <button className="league-btn mx-4" onClick={createRoom}>新建房间</button>
-        <button className="league-btn mx-4" onClick={setUser}>设置用户</button>
-
+        <button className="league-btn mx-4" onClick={setUser}>配置</button>
       </div>
       <div className="my-8">
-        <table className="table-auto w-full">
-          <thead>
-            <tr>
-              <th className="text-left py-4 pl-2">房间名</th>
-              <th className="text-left py-4">状态</th>
-              <th className="text-left py-4">人数</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rooms.map((room) => (
-              <tr className="hover:outline-[#785a28] hover:outline" key={room.id} onClick={() => { gotoRoom(room.id) }}>
-                <td className="py-2 pl-2">{room.name}</td>
-                <td className="py-2">{room.status == 'waiting' ? "等待中" : "游戏中"}</td>
-                <td className="py-2">{room.playerNumber} / 10 </td>
-              </tr>
-            ))}
-          </tbody>
-
-        </table>
-
-
-
+        {body}
       </div>
-
     </div>
   );
 }

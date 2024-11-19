@@ -1,5 +1,5 @@
 import styles from './ChampionPick.module.css'
-import champions from '../../../../../public/assets/champions.json'
+import champions from '../../../../public/assets/champions.json'
 import { UserDTO } from '../../../services/room';
 
 type PlayerCardProps = {
