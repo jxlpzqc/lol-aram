@@ -1,17 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import * as rooms from './rooms';
-
-type RoomDTO = {
-  id: string;
-  name: string;
-  status: 'waiting' | 'playing' | 'finished';
-  playerNumber: number;
-};
+import { RoomInListDTO } from '../../types/contract';
 
 @Controller()
 export class AppController {
   @Get('rooms')
-  getRooms(): RoomDTO[] {
+  getRooms(): RoomInListDTO[] {
     return rooms.getRooms().map((room) => ({
       id: room.id,
       name: room.name,

@@ -1,47 +1,11 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
+import { RoomDTO, RoomInListDTO } from '../../../../types/contract';
 
-export type RoomDTO = {
-    id: string;
-    name: string;
-    status: 'waiting' | 'playing';
-    playerNumber: number;
-};
-
-export type SocketRoomDTO = {
-    id: string;
-    name: string;
-    status: 'waiting' | 'playing' | 'finished';
-    playerNumber: number;
-    avaliableChampions: number[];
-    users: (UserDTO | null)[];
-}
-
-
-export type GameData = {
-    champion: number;
-    remainRandom: number;
-};
-
-export type RoomGameData = {
-    blueTeamAvailableChampions: number[];
-    redTeamAvailableChampions: number[];
-    championsPool: number[];
-};
-
-
-export type UserDTO = {
-    id: string;
-    name: string;
-    gameID: string;
-    gameData?: GameData;
-};
-
-
-export async function getAllRooms(): Promise<RoomDTO[]> {
+export async function getAllRooms(): Promise<RoomInListDTO[]> {
     const ret = await fetch("http://" + session.server + "/rooms")
     const data = await ret.json();
-    return data as RoomDTO[];
+    return data as RoomInListDTO[];
 }
 
 export type RoomSocketOpts = {
@@ -50,7 +14,7 @@ export type RoomSocketOpts = {
     userID: string,
     userName: string,
     userGameID: string,
-    onRoom?: (data: SocketRoomDTO) => void,
+    onRoom?: (data: RoomDTO) => void,
     onConnect?: () => void,
     onDisconnect?: (reason: string) => void,
     onTime?: (data: { time: number }) => void,

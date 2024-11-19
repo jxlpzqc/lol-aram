@@ -1,23 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Socket } from 'socket.io';
 
-export type GameData = {
-  champion: number;
-  remainRandom: number;
-};
+import type { GameDataDTO, RoomGameDataDTO, RoomStatus, UserDTO } from '../../types/contract';
 
-export type RoomGameData = {
-  blueTeamAvailableChampions: number[];
-  redTeamAvailableChampions: number[];
-  championsPool: number[];
-};
-
-export type UserInfo = {
-  id: string;
-  name: string;
-  gameID: string;
-  gameData?: GameData;
-};
+export type RoomGameData = RoomGameDataDTO;
+export type GameData = GameDataDTO;
+export type UserInfo = UserDTO;
 
 export type UserAndSocket = {
   user: UserInfo;
@@ -27,18 +15,10 @@ export type UserAndSocket = {
 export type RoomInfo = {
   id: string;
   name: string;
-  status: 'waiting' | 'playing' | 'finished';
+  status: RoomStatus;
   users: (UserAndSocket | null)[];
   roomGameDatas?: RoomGameData;
 };
-
-export type RoomDTO = {
-  id: string;
-  name: string;
-  status: 'waiting' | 'playing' | 'finished';
-  avaliableChampions: number[];
-  users: (UserInfo | null)[];
-}
 
 const rooms: RoomInfo[] = [];
 
