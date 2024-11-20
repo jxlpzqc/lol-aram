@@ -5,11 +5,11 @@ const _leagueBridge = {
         const ret = await ipcRenderer.invoke('league:isLeagueRunning');
         return ret as boolean;
     },
-    createNewGame: async (gameName: string, password: string) => {
-        await ipcRenderer.invoke('league:createNewGame', gameName, password);
+    createNewGame: async (gameName: string, password: string, summonerID: string, team: 'blue' | 'red') => {
+        await ipcRenderer.invoke('league:createNewGame', gameName, password, summonerID, team);
     },
-    joinGame: async (gameName: string, password: string, team: 'blue' | 'red' = 'blue') => {
-        await ipcRenderer.invoke('league:joinGame', gameName, password, team);
+    joinGame: async (gameName: string, password: string, summonerID: string, team: 'blue' | 'red' = 'blue') => {
+        await ipcRenderer.invoke('league:joinGame', gameName, password, summonerID, team);
     },
     startGame: async () => {
         await ipcRenderer.invoke('league:startGame');

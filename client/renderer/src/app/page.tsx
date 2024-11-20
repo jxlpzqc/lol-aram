@@ -1,10 +1,11 @@
 "use client"
-import { getAllRooms, RoomDTO } from "../services/room";
+import { getAllRooms } from "../services/room";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import sessionService from "../services/session";
 import LoadingPage from "../components/LoadingPage";
 import FailPage from "../components/FailPage";
+import { RoomDTO } from "../../../../types/contract";
 
 
 export default function Home() {

@@ -10,11 +10,11 @@ export function registLeagueService() {
     ipcMain.handle('league:isLeagueRunning', async () => {
         return await isLeagueRunning();
     });
-    ipcMain.handle('league:createNewGame', async (_event, gameName: string, password: string) => {
-        return await createNewGame(gameName, password);
+    ipcMain.handle('league:createNewGame', async (_event, gameName: string, password: string, summonerID: string, team: 'blue' | 'red') => {
+        return await createNewGame(gameName, password, summonerID, team);
     });
-    ipcMain.handle('league:joinGame', async (_event, gameName: string, password: string, team: 'blue' | 'red') => {
-        return await joinGame(gameName, password, team);
+    ipcMain.handle('league:joinGame', async (_event, gameName: string, password: string, summonerID: string, team: 'blue' | 'red') => {
+        return await joinGame(gameName, password, summonerID, team);
     });
     ipcMain.handle('league:startGame', async () => {
         return await startGame();

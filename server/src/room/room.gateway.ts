@@ -12,7 +12,7 @@ import { first, map } from 'rxjs/operators';
 import { Server, Socket } from 'socket.io';
 import * as rooms from '../rooms';
 import { Logger } from '@nestjs/common';
-import { CreateRoomResult } from '../../../types/contract';
+import { JoinRoomRequest, CreateRoomRequest } from '../../../types/contract';
 
 @WebSocketGateway({
   cors: {
@@ -160,12 +160,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     let progressID = 0;
     let progress = { id: progressID++, message: `等待 ${firstPlayer.user.gameID} 创建房间...`, status: 0 };
-    firstPlayer?.socket.emit('createRoom');
+    firstPlayer?.socket.emit('createRoom', {
+      team: roomInfo.users.findIndex(x => x?.user?.id === firstPlayer.user.id) < 5 ? 'blue' : 'red'
+    } as CreateRoomRequest);
     this.emitToRoom(roomInfo, 'executeProgress', progress);
 
     let leagueRoomResult;
     try {
-      leagueRoomResult = await new Promise<CreateRoomResult>((resolve, reject) => {
+      leagueRoomResult = await new Promise<JoinRoomRequest>((resolve, reject) => {
         firstPlayer?.socket.once('createRoom:success', resolve);
         firstPlayer?.socket.once('createRoom:fail', reject);
         firstPlayer?.socket.once('disconnect', reject);

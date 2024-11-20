@@ -1,8 +1,9 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { CreateRoomResult, ProgressDTO, RoomDTO, RoomInListDTO } from '../../../../types/contract';
+import { CreateRoomRequest, CreateRoomResult, ProgressDTO, RoomDTO, RoomInListDTO } from '../../../../types/contract';
 import leagueHandler from "./league";
 import { v4 } from "uuid";
+import sessionService from "./session";
 
 export async function getAllRooms(): Promise<RoomInListDTO[]> {
   const ret = await fetch("http://" + session.server + "/rooms")
@@ -113,12 +114,12 @@ export async function executeGame(
     }
   }
 
-  const handleCreateRoom = async () => {
+  const handleCreateRoom = async ({ team }: CreateRoomRequest) => {
     const gameName = roomInfo.id;
     const password = v4();
     console.log("create room", gameName, password);
 
-    await leagueHandler.createNewGame(gameName, password);
+    await leagueHandler.createNewGame(gameName, password, sessionService.summonerId!, team);
 
     return {
       roomName: gameName,
@@ -130,7 +131,7 @@ export async function executeGame(
   socket.on("createRoom", createRoomHandler);
 
   const handleJoinRoom = async ({ roomName, password, team }: CreateRoomResult) => {
-    await leagueHandler.joinGame(roomName, password, team);
+    await leagueHandler.joinGame(roomName, password, sessionService.summonerId!, team);
   }
 
   const joinRoomHandler = createHandler("joinRoom", handleJoinRoom);

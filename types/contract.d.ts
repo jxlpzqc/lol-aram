@@ -30,7 +30,11 @@ export type RoomInListDTO = {
   playerNumber: number;
 };
 
-export type CreateRoomResult = {
+export type CreateRoomRequest = {
+  team: 'blue' | 'red';
+}
+
+export type JoinRoomRequest = {
   roomName: string;
   password: string;
   team: 'blue' | 'red';
