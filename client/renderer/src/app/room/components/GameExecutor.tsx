@@ -2,6 +2,7 @@ import { useRouter } from "next/navigation";
 import { ProgressDTO, RoomDTO, UserDTO } from "../../../../../../types/contract"
 import LeagueButtonGroup from "../../../components/LeagueButtonGroup";
 import { useEffect, useRef } from "react";
+import styles from "./GameExecutor.module.css";
 
 type Props = {
   seats?: (UserDTO | null)[],
@@ -53,7 +54,7 @@ export default function ({
       游戏启动进程
     </h1>
 
-    <div className="grow overflow-auto py-8" ref={progressRef}>
+    <div className={`grow overflow-auto py-8 ${styles['hide-scrollbar']}`} ref={progressRef}>
       {
         progress?.map(x => (
           <ProgressItem progress={x} />
@@ -61,7 +62,7 @@ export default function ({
       }
     </div>
 
-    <div className="mt-16 flex justify-center">
+    <div className="flex justify-center">
       {
         finished && <LeagueButtonGroup text="再来一局" onConfirm={replay}
           onCancel={() => {
