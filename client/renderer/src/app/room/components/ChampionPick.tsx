@@ -22,9 +22,9 @@ type Champion = {
 const championList: Champion[] = champions as Champion[];
 
 function PlayerCard(props: PlayerCardProps) {
-  const portraitURL = !props.championID ? "" : championList[props.championID].portraitURL;
-  const skinURL = !props.championID ? "" : championList[props.championID].skinURL;
-  const championName = !props.championID ? "" : championList[props.championID].name;
+  const portraitURL = !props.championID ? "" : championList[props.championID]?.portraitURL;
+  const skinURL = !props.championID ? "" : championList[props.championID]?.skinURL;
+  const championName = !props.championID ? "" : championList[props.championID]?.name;
   const gameID = !props.gameID ? "N/A" : props.gameID;
   const userName = !props.name ? "N/A" : props.name;
 

@@ -13,9 +13,9 @@ export default function () {
   const router = useRouter();
 
   const summonerId = useRef<string | null>();
-  const [realName, setRealName] = useState(localStorage.getItem("realName") || "");
-  const [gameID, setGameID] = useState(localStorage.getItem("gameID") || "");
-  const [server, setServer] = useState(localStorage.getItem("server") || "lol.fancybag.cn:22001");
+  const [realName, setRealName] = useState(globalThis?.localStorage?.getItem("realName") || "");
+  const [gameID, setGameID] = useState(globalThis?.localStorage?.getItem("gameID") || "");
+  const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || "lol.fancybag.cn:22001");
 
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
@@ -41,14 +41,14 @@ export default function () {
     try {
       sessionService.regist({
         server: server,
-        sessionID: localStorage.getItem("id") || v4(),
+        sessionID: globalThis?.localStorage?.getItem("id") || v4(),
         realName,
         summonerName: gameID,
         summonerId: summonerId.current || ""
       });
 
-      localStorage.setItem("realName", realName);
-      localStorage.setItem("gameID", gameID);
+      globalThis?.localStorage?.setItem("realName", realName);
+      globalThis?.localStorage?.setItem("gameID", gameID);
       router.replace(`/`);
     } catch (e) {
       if (e instanceof Error)

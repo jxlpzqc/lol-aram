@@ -24,8 +24,8 @@ export default {
         _summonerName = info.summonerName;
         _server = info.server;
 
-        localStorage.setItem("server", info.server);
-        localStorage.setItem("realName", info.realName);
+        globalThis?.localStorage?.setItem("server", info.server);
+        globalThis?.localStorage?.setItem("realName", info.realName);
     },
     get server(): string | null {
         return _server;

@@ -200,7 +200,7 @@ export function randomChampion(roomID: string, userid: string) {
 
   const oldChampion = user.gameData.champion;
 
-  if (seatId < MAX_SEATS / 2) {
+  if (getSeatIndexGroup(seatId) === 0) {
     room.roomGameDatas.blueTeamAvailableChampions.push(oldChampion);
   } else {
     room.roomGameDatas.redTeamAvailableChampions.push(oldChampion);
@@ -240,7 +240,7 @@ export function pickChampion(roomID: string, userid: string, champion: number) {
     throw new Error('User not in room');
   }
 
-  const avaliableChampions = seatId < MAX_SEATS / 2 ?
+  const avaliableChampions = getSeatIndexGroup(seatId) === 0 ?
     room.roomGameDatas?.blueTeamAvailableChampions : room.roomGameDatas?.redTeamAvailableChampions;
 
   if (avaliableChampions?.findIndex((c) => c === champion) === -1) {
@@ -253,9 +253,17 @@ export function pickChampion(roomID: string, userid: string, champion: number) {
   room.users[seatId].user.gameData.champion = champion;
 }
 
+export function getUserGroup(room: RoomInfo, userid: string): number {
+  return room.users.findIndex((u) => u?.user.id === userid) < (MAX_SEATS / 2) ? 0 : 1;
+}
+
+export function getSeatIndexGroup(idx: number): number {
+  return idx < (MAX_SEATS / 2) ? 0 : 1;
+}
+
 export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
 
-  const currentUserGroup = room.users.findIndex((u) => u?.user.id === userid) / (MAX_SEATS / 2);
+  const currentUserGroup = getUserGroup(room, userid);
 
   return {
     id: room.id,
@@ -271,7 +279,7 @@ export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
           ...x.user,
           id: x.user.id === userid ? x.user.id : "<hidden>",
           gameData: (room.status === 'waiting' ||
-            (i / (MAX_SEATS / 2)) === currentUserGroup) ?
+            getSeatIndexGroup(i) === currentUserGroup) ?
             x.user.gameData : undefined,
         },
     )

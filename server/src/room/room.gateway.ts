@@ -172,7 +172,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     progressMsgWhenFail?: string,
     progressMsgWhenFinish?: string,
     progressMsgWhenFinishOne?: (n: number, t: number) => string,
-    timeout = 10000): Promise<T[]> {
+    timeout = 20000): Promise<T[]> {
 
     const sockets = socketsRaw.filter((s) => s !== undefined) as Socket[];
 
@@ -227,7 +227,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
           // timeout
           setTimeout(() => {
-            reject(new Error(progressMsg + "超时"));;
+            reject?.(new Error(progressMsg + "超时"));;
           }, timeout);
 
           socket.once('disconnect', reject);
@@ -267,7 +267,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const leagueRoomResult = (await this.emitEventAndUpdateProgressWithAck<JoinRoomRequest>([firstPlayer?.socket],
       roomInfo,
       'createRoom',
-      { team: roomInfo.users.findIndex(x => x?.user?.id === firstPlayer?.user.id) < 5 ? 'blue' : 'red' } as CreateRoomRequest,
+      { team: rooms.getUserGroup(roomInfo, firstPlayer.user.id) === 0 ? 'blue' : 'red' } as CreateRoomRequest,
       progressID++,
       `${firstPlayer?.user.gameID} 创建房间`))[0];
 
@@ -281,7 +281,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         'joinRoom',
         {
           ...leagueRoomResult,
-          team: roomInfo.users.findIndex(x => x?.user?.id === otherUser.user.id) < 5 ? 'blue' : 'red'
+          team: rooms.getUserGroup(roomInfo, otherUser.user.id) === 0 ? 'blue' : 'red'
         },
         progressID++,
         `${otherUser.user.gameID} 加入房间`
