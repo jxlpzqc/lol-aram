@@ -287,7 +287,7 @@ export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
         : {
           ...x.user,
           id: x.user.id === userid ? x.user.id : "<hidden>",
-          gameData: (room.status === 'waiting' ||
+          gameData: (room.status !== 'playing' ||
             getSeatIndexGroup(i) === currentUserGroup) ?
             x.user.gameData : undefined,
         },

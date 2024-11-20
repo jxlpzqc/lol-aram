@@ -17,7 +17,7 @@ function SeatCard({ seat, onJoin, onKick }: { seat?: UserDTO | null, onJoin: () 
     <div className="flex gap-x-4">
       <button onClick={onJoin} className="league-btn">
         {seat ? "换位" : "加入"}</button>
-      {seat && <button onClick={onKick} className="league-btn">踢人</button>}
+      {/* {seat && <button onClick={onKick} className="league-btn">踢人</button>} */}
     </div>
 
 

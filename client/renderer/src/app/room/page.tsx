@@ -155,7 +155,7 @@ export default function Room() {
 
         <ChampionPick
           totalTime={totalTime}
-          seats={status === 1 ? seats : finishedSeats.current}
+          seats={status !== 3 ? seats : finishedSeats.current}
           remainingTime={remaingTime}
           finished={status !== 1}
           availableChampions={availableChampions} diceNumber={diceNumber} onRandom={async () => {
