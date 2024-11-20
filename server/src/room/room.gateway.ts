@@ -236,7 +236,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     } catch (e) {
       this.logger.error(e);
-      p.message = progressMsgWhenFail;
+      p.message = progressMsgWhenFail + "，具体原因：" + e;
       p.status = 2;
       this.emitToRoom(roomInfo, 'executeProgress', p);
 

@@ -108,8 +108,8 @@ export async function executeGame(
         console.log("emit", event + ":success", ret);
         await socket.emitWithAck(event + ":success", ret);
       } catch (e) {
-        console.log("emit", event + ":fail", e);
-        await socket.emitWithAck(event + ":fail");
+        console.log("emit", event + ":fail", e?.toString());
+        await socket.emitWithAck(event + ":fail", e?.toString());
       }
     }
   }
