@@ -259,10 +259,23 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     roomInfo.status = 'executing';
     this.notifyRoom(roomInfo);
 
+    let progressID = 0;
+
+    await this.emitEventAndUpdateProgressWithAck(
+      roomInfo.users.map((u) => u?.socket),
+      roomInfo,
+      'prepareExecute',
+      {},
+      progressID++,
+      "等待所有玩家准备好启动游戏",
+      "未收到所有玩家的准备执行响应",
+      "所有玩家准备执行完成",
+      (n, t) => `等待所有玩家准备好启动游戏，当前进度 ${n} / ${t}.`
+    );
+
     // First player create room
     const firstPlayer = roomInfo.users.find((u) => u !== null);
 
-    let progressID = 0;
 
     const leagueRoomResult = (await this.emitEventAndUpdateProgressWithAck<JoinRoomRequest>([firstPlayer?.socket],
       roomInfo,

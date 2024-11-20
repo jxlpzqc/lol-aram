@@ -152,6 +152,7 @@ export async function executeGame(
   const pickHandler = createHandler("pick", handlePick);
   socket.on("pick", pickHandler);
 
+  await socket.emitWithAck("prepareExecute");
 
   await new Promise((resolve, _reject) => {
     socket.once("finish", resolve);
