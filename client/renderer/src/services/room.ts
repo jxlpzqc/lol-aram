@@ -87,7 +87,7 @@ export async function executeGame(
   roomInfo: RoomDTO,
   socket: Socket,
   updateProgress?: (data: ProgressDTO[]) => void
-) {
+): Promise<RoomDTO> {
   let processes: ProgressDTO[] = [];
 
   const handleProgress = (data: ProgressDTO) => {
@@ -154,7 +154,7 @@ export async function executeGame(
 
   await socket.emitWithAck("prepareExecute");
 
-  await new Promise((resolve, _reject) => {
+  const ret = await new Promise<RoomDTO>((resolve, _reject) => {
     socket.once("finish", resolve);
   });
 
@@ -163,4 +163,6 @@ export async function executeGame(
   socket.off("joinRoom", joinRoomHandler);
   socket.off("startGame", startGameHandler);
   socket.off("pick", pickHandler);
+
+  return ret;
 }

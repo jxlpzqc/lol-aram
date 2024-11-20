@@ -43,6 +43,8 @@ export default function Room() {
   // 0: waiting 1: playing 2: executing 3: finished
   const [status, setStatus] = useState<number>(0);
 
+  const finishedSeats = useRef<(UserDTO | null)[]>([]);
+
   const socket = useRef<Socket | null>(null);
 
   const connectToRoom = async () => {
@@ -77,10 +79,10 @@ export default function Room() {
             else if (data.status === 'executing') {
               (async () => {
                 if (!socket.current) return;
-                await executeGame(data, socket.current, (x) => {
+                finishedSeats.current = (await executeGame(data, socket.current, (x) => {
                   console.log("update progress", x);
                   setProgress(x);
-                });
+                })).users;
                 setStatus(3);
               })();
               return 2;
@@ -151,7 +153,11 @@ export default function Room() {
     } else if (status === 1 || status === 2 || status === 3) {
       return <div className='h-screen w-screen'>
 
-        <ChampionPick totalTime={totalTime} seats={seats} remainingTime={remaingTime} finished={status !== 1}
+        <ChampionPick
+          totalTime={totalTime}
+          seats={status === 1 ? seats : finishedSeats.current}
+          remainingTime={remaingTime}
+          finished={status !== 1}
           availableChampions={availableChampions} diceNumber={diceNumber} onRandom={async () => {
             socket.current?.emit('random');
           }} onChange={async (championID) => {
