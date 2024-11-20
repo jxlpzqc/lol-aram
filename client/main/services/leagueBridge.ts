@@ -5,8 +5,8 @@ const _leagueBridge = {
         const ret = await ipcRenderer.invoke('league:isLeagueRunning');
         return ret as boolean;
     },
-    createNewGame: async () => {
-        await ipcRenderer.invoke('league:createNewGame');
+    createNewGame: async (gameName: string, password: string) => {
+        await ipcRenderer.invoke('league:createNewGame', gameName, password);
     },
     joinGame: async (gameName: string, password: string, team: 'blue' | 'red' = 'blue') => {
         await ipcRenderer.invoke('league:joinGame', gameName, password, team);

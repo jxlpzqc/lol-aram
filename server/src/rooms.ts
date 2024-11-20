@@ -1,11 +1,18 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Socket } from 'socket.io';
 
-import type { GameDataDTO, RoomGameDataDTO, RoomStatus, UserDTO } from '../../types/contract';
+import type { GameDataDTO, RoomDTO, RoomStatus, UserDTO } from '../../types/contract';
 
-export type RoomGameData = RoomGameDataDTO;
+export type RoomGameData = {
+  blueTeamAvailableChampions: number[];
+  redTeamAvailableChampions: number[];
+  usedChampions: number[];
+};
+
 export type GameData = GameDataDTO;
-export type UserInfo = UserDTO;
+export type UserInfo = UserDTO & {
+  ownedChampions: number[]
+};
 
 export type UserAndSocket = {
   user: UserInfo;
@@ -15,6 +22,7 @@ export type UserAndSocket = {
 export type RoomInfo = {
   id: string;
   name: string;
+  waitingTime: number;
   status: RoomStatus;
   users: (UserAndSocket | null)[];
   roomGameDatas?: RoomGameData;
@@ -30,10 +38,11 @@ const MAX_SEATS = 10;
 const CHAMPIONS = 169;
 const MAX_RANDOM = 2;
 
-function createRoom(name: string, user: UserInfo, socket: Socket): RoomInfo {
+function createRoom(opts: RoomCreateOptions, user: UserInfo, socket: Socket): RoomInfo {
   const room: RoomInfo = {
     id: generateID(),
-    name,
+    name: opts.name,
+    waitingTime: opts.waitingTime,
     status: 'waiting',
     users: new Array(MAX_SEATS).fill(null),
   };
@@ -76,11 +85,16 @@ export function getRoom(id: string): RoomInfo | undefined {
   return rooms.find((room) => room.id === id);
 }
 
+export type RoomCreateOptions = {
+  name: string;
+  waitingTime: number;
+};
+
 export function joinRoom(
   roomID: string,
   user: UserInfo,
-  name: string = 'Unnamed Room',
   socket: Socket,
+  roomCreateOptions?: RoomCreateOptions,
 ): string {
   let room = getRoom(roomID);
   if (room) {
@@ -88,7 +102,15 @@ export function joinRoom(
       throw new Error('User already in room');
     }
   } else {
-    room = createRoom(name, user, socket);
+    room = createRoom(roomCreateOptions, user, socket);
+  }
+
+  if (room.status !== 'waiting') {
+    throw new Error('Cannot join room when game is in progress');
+  }
+
+  if (room.users.every((u) => u !== null)) {
+    throw new Error('Room is full');
   }
 
   room.users[getFirstEmptySeat(room)] = { user, socket };
@@ -98,6 +120,10 @@ export function joinRoom(
 export function quitRoom(roomID: string, userid: string) {
   const room = getRoom(roomID);
   if (room) {
+    if (room.status !== 'waiting') {
+      throw new Error('Cannot quit room when game is in progress');
+    }
+
     room.users[room.users.findIndex((u) => u?.user.id === userid)] = null;
   } else {
     throw new Error('Room not found');
@@ -111,15 +137,13 @@ export function quitRoom(roomID: string, userid: string) {
   }
 }
 
-function getShuffleChampionsArray() {
-  const arr = Array.from({ length: CHAMPIONS }, (_, i) => i);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * i);
-    const temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-  }
-  return arr;
+function rollChampion(user: UserAndSocket, usedChampions: number[]) {
+  const rollSet = user.user
+    .ownedChampions.filter(x => !usedChampions.includes(x));
+
+  const randomIdx = Math.floor(Math.random() * rollSet.length);
+  const champion = rollSet[randomIdx];
+  return champion;
 }
 
 export function playGame(roomID: string) {
@@ -131,14 +155,15 @@ export function playGame(roomID: string) {
   room.roomGameDatas = {
     blueTeamAvailableChampions: [],
     redTeamAvailableChampions: [],
-    championsPool: getShuffleChampionsArray(),
+    usedChampions: []
   };
   for (let i = 0; i < MAX_SEATS; i++) {
     if (room.users[i]) {
       room.users[i].user.gameData = {
-        champion: room.roomGameDatas.championsPool[i],
+        champion: rollChampion(room.users[i], room.roomGameDatas.usedChampions),
         remainRandom: MAX_RANDOM,
       };
+      room.roomGameDatas.usedChampions.push(room.users[i].user.gameData.champion);
     }
   }
 }
@@ -163,7 +188,8 @@ export function randomChampion(roomID: string, userid: string) {
     MAX_SEATS +
     room.roomGameDatas.blueTeamAvailableChampions.length +
     room.roomGameDatas.redTeamAvailableChampions.length;
-  const newChampion = room.roomGameDatas?.championsPool[newChampionIdx];
+  const newChampion = rollChampion(room.users[seatId], room.roomGameDatas.usedChampions);
+  room.roomGameDatas.usedChampions.push(newChampion);
 
   const oldChampion = user.gameData.champion;
 
@@ -181,6 +207,8 @@ export function exitGame(roomID: string) {
   if (!room) {
     throw new Error('Room not found');
   }
+  if (room.status !== 'playing')
+    throw new Error("Only game in playing mode can be exited");
   room.status = 'waiting';
   room.roomGameDatas = undefined;
   room.users.forEach((u) => {
@@ -218,13 +246,16 @@ export function pickChampion(roomID: string, userid: string, champion: number) {
   room.users[seatId].user.gameData.champion = champion;
 }
 
-export function roomToClient(room: RoomInfo, userid: string) {
+export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
+
+  const currentUserGroup = room.users.findIndex((u) => u?.user.id === userid) / (MAX_SEATS / 2);
 
   return {
     id: room.id,
     name: room.name,
     status: room.status,
-    avaliableChampions: room.users.findIndex((u) => u?.user.id === userid) < MAX_SEATS / 2 ?
+    totalTime: room.waitingTime,
+    avaliableChampions: currentUserGroup === 0 ?
       room.roomGameDatas?.blueTeamAvailableChampions : room.roomGameDatas?.redTeamAvailableChampions,
     users: room.users.map((x, i) =>
       x === null
@@ -232,8 +263,8 @@ export function roomToClient(room: RoomInfo, userid: string) {
         : {
           ...x.user,
           id: x.user.id === userid ? x.user.id : "<hidden>",
-          gameData: (room.status === 'finished' ||
-            (i / 5) === (room.users.findIndex((u) => u?.user.id === userid) / 5)) ?
+          gameData: (room.status === 'waiting' ||
+            (i / (MAX_SEATS / 2)) === currentUserGroup) ?
             x.user.gameData : undefined,
         },
     )

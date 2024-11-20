@@ -15,6 +15,7 @@ export async function isLeagueRunning() {
 
 export async function createNewGame(gameName: string, password: string) {
     const credentials = await authenticate();
+    console.log("Creating new game", gameName, password);
     const response = await createHttp1Request({
         method: 'POST',
         url: '/lol-lobby/v2/lobby',
@@ -40,8 +41,10 @@ export async function createNewGame(gameName: string, password: string) {
         }
     }, credentials);
 
+    console.log(response.status);
+
     if (response.status !== 200) {
-        throw new Error(`创建房间失败！${await response.json()}`);
+        throw new Error(`创建房间失败！${JSON.stringify(await response.json(), null, 2)}`);
     }
 }
 
@@ -116,7 +119,7 @@ export async function getOwnedChampions(): Promise<number[]> {
         url: '/lol-champions/v1/owned-champions-minimal',
     }, credentials);
     const d = await resp.json();
-    console.log(championList)
+    // console.log(championList)
     return d.map((champion: any) => championList.findIndex(x => x.id == champion.id));
 }
 
@@ -144,7 +147,7 @@ export async function selectChampion(championId: number) {
 
         if (type !== 'pick') continue;
 
-        const ret = await createHttp1Request({
+        await createHttp1Request({
             method: 'PATCH',
             url: `/lol-champ-select/v1/session/actions/${actionId}`,
             body: {
@@ -153,7 +156,6 @@ export async function selectChampion(championId: number) {
                 "completed": true
             }
         }, credentials);
-        console.log(await ret.json());
     }
 }
 

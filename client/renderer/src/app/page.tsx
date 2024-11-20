@@ -84,7 +84,10 @@ export default function Home() {
 
   return (
     <div className="m-8">
-      <h1 className="text-3xl font-sans font-bold">PRIDE 青训营 房间列表</h1>
+      <h1 className="text-3xl font-sans font-bold">
+        <img src='/images/rift.png' className="w-10 h-10 inline-block mr-4" />
+        房间列表
+      </h1>
       <div className="flex justify-end">
         <button className="league-btn mx-4" onClick={fetchRooms}>刷新</button>
         <button className="league-btn mx-4" onClick={createRoom}>新建房间</button>

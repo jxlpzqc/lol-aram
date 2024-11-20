@@ -6,7 +6,7 @@ export default function Room() {
   return <div className="w-full h-screen">
     <ChampionPick availableChampions={[1, 2, 3, 4]}
       remainingTime={50}
-      selfID="1"
+      totalTime={50}
       seats={[
         {
           id: '1',
@@ -26,7 +26,7 @@ export default function Room() {
             remainRandom: 2
           }
         },
-        null, null, null, null, {
+         {
           id: '3',
           gameID: 'TestGameID',
           name: 'TestName',
@@ -38,7 +38,7 @@ export default function Room() {
           id: '4',
           gameID: 'TestGameID',
           name: 'TestName'
-        }, null, null
+        }, null, null, null, null, null, null,
       ]} />
   </div>
 

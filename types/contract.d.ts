@@ -4,12 +4,6 @@ export type GameDataDTO = {
   remainRandom: number;
 };
 
-export type RoomGameDataDTO = {
-  blueTeamAvailableChampions: number[];
-  redTeamAvailableChampions: number[];
-  championsPool: number[];
-};
-
 export type UserDTO = {
   id: string | "<hidden>";
   name: string;
@@ -17,7 +11,7 @@ export type UserDTO = {
   gameData?: GameDataDTO;
 };
 
-export type RoomStatus = 'waiting' | 'playing' | 'executing' | 'finished';
+export type RoomStatus = 'waiting' | 'playing' | 'executing';
 
 
 export type RoomDTO = {
@@ -26,6 +20,7 @@ export type RoomDTO = {
   status: RoomStatus;
   avaliableChampions: number[];
   users: (UserDTO | null)[];
+  totalTime: number;
 }
 
 export type RoomInListDTO = {
@@ -34,3 +29,15 @@ export type RoomInListDTO = {
   status: RoomStatus;
   playerNumber: number;
 };
+
+export type CreateRoomResult = {
+  roomName: string;
+  password: string;
+  team: 'blue' | 'red';
+}
+
+export type ProgressDTO = {
+  id: number;
+  message: string;
+  status: 0 | 1 | 2;
+}
