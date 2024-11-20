@@ -247,6 +247,10 @@ export function pickChampion(roomID: string, userid: string, champion: number) {
     throw new Error('Champion not available');
   }
 
+  if (room.users[seatId].user.ownedChampions.findIndex((c) => c === champion) === -1) {
+    throw new Error('User does not own this champion');
+  }
+
   avaliableChampions.splice(avaliableChampions.findIndex((c) => c === champion), 1);
   avaliableChampions.push(room.users[seatId].user.gameData.champion);
 
