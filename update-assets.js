@@ -135,10 +135,10 @@ async function getChampionResource(id) {
     const data = await res.json();
     let portraitDownloaded, skinDownloaded, pickSoundDownloaded;
 
-    portraitDownloaded = await downloadAsset(data.squarePortraitPath, "default", `${scriptPath}/client/public/assets/portraits/${data.id}.png`);
+    portraitDownloaded = await downloadAsset(data.squarePortraitPath, "default", `${scriptPath}/client/renderer/public/assets/portraits/${data.id}.png`);
     if (data.skins.length !== 0)
-        skinDownloaded = await downloadAsset(data.skins[0].splashPath, "default", `${scriptPath}/client/public/assets/skins/${data.id}.png`);
-    pickSoundDownloaded = await downloadAsset(data.chooseVoPath, "zh_cn", `${scriptPath}/client/public/assets/sounds/${data.id}.ogg`);
+        skinDownloaded = await downloadAsset(data.skins[0].splashPath, "default", `${scriptPath}/client/renderer/public/assets/skins/${data.id}.png`);
+    pickSoundDownloaded = await downloadAsset(data.chooseVoPath, "zh_cn", `${scriptPath}/client/renderer/public/assets/sounds/${data.id}.ogg`);
 
     return {
         id: data.id,
@@ -166,8 +166,8 @@ async function main() {
     }
 
     console.log("Writing list to file...");
-    await fsPromises.mkdir(`${scriptPath}/client/public/assets`, { recursive: true });
-    await fsPromises.writeFile(`${scriptPath}/client/public/assets/champions.json`,
+    await fsPromises.mkdir(`${scriptPath}/client/renderer/public/assets`, { recursive: true });
+    await fsPromises.writeFile(`${scriptPath}/client/renderer/public/assets/champions.json`,
         JSON.stringify(results, null, 2)
     );
 
