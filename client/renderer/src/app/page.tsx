@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import sessionService from "../services/session";
 import LoadingPage from "../components/LoadingPage";
 import FailPage from "../components/FailPage";
-import { RoomDTO } from "../../../../types/contract";
+import { RoomInListDTO } from "../../../../types/contract";
 
 
 export default function Home() {
-  const [rooms, setRooms] = useState<RoomDTO[]>([]);
+  const [rooms, setRooms] = useState<RoomInListDTO[]>([]);
 
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");

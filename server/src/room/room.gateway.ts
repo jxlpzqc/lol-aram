@@ -12,7 +12,7 @@ import { first, map } from 'rxjs/operators';
 import { Server, Socket } from 'socket.io';
 import * as rooms from '../rooms';
 import { Logger } from '@nestjs/common';
-import { JoinRoomRequest, CreateRoomRequest } from '../../../types/contract';
+import { JoinRoomRequest, CreateRoomRequest, ProgressDTO } from '../../../types/contract';
 
 @WebSocketGateway({
   cors: {
@@ -25,7 +25,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private socketToUserInfo(client: Socket): rooms.UserInfo {
     let { id, name, gameID, champions: championStr } = client.handshake.query;
-    console.log(client.handshake.query);
+    // console.log(client.handshake.query);
     if (Array.isArray(id)) id = id[0];
     if (Array.isArray(name)) name = name[0];
     if (Array.isArray(gameID)) gameID = gameID[0];
@@ -47,6 +47,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket, ...args: any[]) {
     const userInfo = this.socketToUserInfo(client);
+
+    if (rooms.getRoomByUser(userInfo.id)) {
+      rooms.quitRoom(rooms.getRoomByUser(userInfo.id)!.id, userInfo.id);
+    }
 
     let { roomID, roomName, waitingTime } = client.handshake.query;
 
@@ -82,6 +86,16 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.notifyRoom(rooms.getRoom(roomID));
     } catch (e) {
       this.logger.error(e);
+    }
+  }
+
+  private checkNeedStop(room: rooms.RoomInfo, otherAction?: () => void) {
+    if (room.needStop) {
+      room.needStop = false;
+      room.status = 'waiting';
+      otherAction?.();
+      this.notifyRoom(room);
+      throw new Error('Room is stopped');
     }
   }
 
@@ -126,6 +140,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async play(client: Socket, data: { card: number }) {
 
     const roomInfo = this.socketToRoomInfo(client);
+    roomInfo.needStop = false;
     roomInfo.status = 'playing';
 
     rooms.playGame(roomInfo.id);
@@ -137,6 +152,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     while (time > 0) {
       this.emitToRoom(roomInfo, 'time', { time });
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      this.checkNeedStop(roomInfo);
+
       if (roomInfo.status !== 'playing') return;
       time--;
     }
@@ -145,12 +162,99 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.executeGame(roomInfo);
   }
 
-  private async executeGame(roomInfo: rooms.RoomInfo) {
+  private async emitEventAndUpdateProgressWithAck<T = void>(
+    socketsRaw: (Socket | undefined)[],
+    roomInfo: rooms.RoomInfo,
+    event: string,
+    data: any,
+    progressID: number,
+    progressMsg: string,
+    progressMsgWhenFail?: string,
+    progressMsgWhenFinish?: string,
+    progressMsgWhenFinishOne?: (n: number, t: number) => string,
+    timeout = 10000): Promise<T[]> {
+
+    const sockets = socketsRaw.filter((s) => s !== undefined) as Socket[];
+
     const finishExecute = () => {
       this.notifyRoom(roomInfo, 'finish');
       roomInfo.status = 'waiting';
       this.notifyRoom(roomInfo);
     };
+
+    if (!progressMsgWhenFail) {
+      progressMsgWhenFail = progressMsg + "失败";
+    }
+
+    if (!progressMsgWhenFinish) {
+      progressMsgWhenFinish = progressMsg + "已完成";
+    }
+    if (!progressMsgWhenFinishOne) {
+      progressMsgWhenFinishOne = (n, t) => `${progressMsg} ${n} / ${t}`;
+    }
+
+    const p = { id: progressID, message: progressMsg, status: 0 };
+
+    this.emitToRoom(roomInfo, 'executeProgress', p);
+
+    for (const socket of sockets) {
+      socket.emit(event, data);
+    }
+
+    try {
+      return await new Promise<T[]>((resolve, reject) => {
+        const ret = new Array<T>(sockets.length);
+        let ready = 0;
+        for (const socket of sockets) {
+          socket.once(event + ':success', (data) => {
+            ret[sockets.indexOf(socket)] = data;
+            ++ready;
+
+            if (ready === sockets.length) {
+              p.message = progressMsgWhenFinish;
+              p.status = 1;
+              this.emitToRoom(roomInfo, 'executeProgress', p);
+            } else {
+              p.message = progressMsgWhenFinishOne(ready, sockets.length);
+              this.emitToRoom(roomInfo, 'executeProgress', p);
+            }
+
+            if (ready === sockets.length) {
+              resolve(ret);
+            }
+          });
+          socket.once(event + ':fail', reject);
+
+          // timeout
+          setTimeout(() => {
+            reject(new Error(progressMsg + "超时"));;
+          }, timeout);
+
+          socket.once('disconnect', reject);
+        }
+      });
+
+    } catch (e) {
+      this.logger.error(e);
+      p.message = progressMsgWhenFail;
+      p.status = 2;
+      this.emitToRoom(roomInfo, 'executeProgress', p);
+
+      finishExecute();
+      throw e;
+    }
+  }
+
+  private async executeGame(roomInfo: rooms.RoomInfo) {
+
+    const ck = () => {
+      this.checkNeedStop(roomInfo, () => {
+        this.emitToRoom(roomInfo, 'executeProgress', {
+          id: -100, message: '由于玩家退出，游戏启动进程已停止', status: 2
+        });
+        this.notifyRoom(roomInfo, 'finish');
+      });
+    }
 
     roomInfo.status = 'executing';
     this.notifyRoom(roomInfo);
@@ -159,121 +263,61 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const firstPlayer = roomInfo.users.find((u) => u !== null);
 
     let progressID = 0;
-    let progress = { id: progressID++, message: `等待 ${firstPlayer.user.gameID} 创建房间...`, status: 0 };
-    firstPlayer?.socket.emit('createRoom', {
-      team: roomInfo.users.findIndex(x => x?.user?.id === firstPlayer.user.id) < 5 ? 'blue' : 'red'
-    } as CreateRoomRequest);
-    this.emitToRoom(roomInfo, 'executeProgress', progress);
 
-    let leagueRoomResult;
-    try {
-      leagueRoomResult = await new Promise<JoinRoomRequest>((resolve, reject) => {
-        firstPlayer?.socket.once('createRoom:success', resolve);
-        firstPlayer?.socket.once('createRoom:fail', reject);
-        firstPlayer?.socket.once('disconnect', reject);
-      });
-      progress.message = "房间创建成功";
-      progress.status = 1;
-      this.emitToRoom(roomInfo, 'executeProgress', progress);
-    } catch (e) {
-      this.logger.error(e);
-      progress.message = "房间创建失败";
-      progress.status = 2;
-      this.emitToRoom(roomInfo, 'executeProgress', progress);
+    const leagueRoomResult = (await this.emitEventAndUpdateProgressWithAck<JoinRoomRequest>([firstPlayer?.socket],
+      roomInfo,
+      'createRoom',
+      { team: roomInfo.users.findIndex(x => x?.user?.id === firstPlayer?.user.id) < 5 ? 'blue' : 'red' } as CreateRoomRequest,
+      progressID++,
+      `${firstPlayer?.user.gameID} 创建房间`))[0];
 
-      finishExecute();
-      return;
-    }
+    ck();
 
     for (const otherUser of roomInfo.users.filter((u) => u !== firstPlayer && u !== null)) {
-      const progress = { id: progressID++, message: `等待 ${otherUser.user.gameID} 加入房间...`, status: 0 };
-      otherUser.socket.emit('joinRoom', leagueRoomResult);
-      this.emitToRoom(roomInfo, 'executeProgress', progress);
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          otherUser.socket.once('joinRoom:success', resolve);
-          otherUser.socket.once('joinRoom:fail', reject);
-          otherUser.socket.once('disconnect', reject);
-        });
-        progress.message = "加入房间成功";
-        progress.status = 1;
-        this.emitToRoom(roomInfo, 'executeProgress', progress);
-      } catch (e) {
-        this.logger.error(e);
-        progress.message = "加入房间失败";
-        progress.status = 2;
-        this.emitToRoom(roomInfo, 'executeProgress', progress);
+      await this.emitEventAndUpdateProgressWithAck(
+        [otherUser.socket],
+        roomInfo,
+        'joinRoom',
+        {
+          ...leagueRoomResult,
+          team: roomInfo.users.findIndex(x => x?.user?.id === otherUser.user.id) < 5 ? 'blue' : 'red'
+        },
+        progressID++,
+        `${otherUser.user.gameID} 加入房间`
+      );
 
-        finishExecute();
-        return;
-      }
+      ck();
     }
 
-    // first player start game
-    progress = { id: progressID++, message: `等待 ${firstPlayer.user.gameID} 开始游戏...`, status: 0 };
-    firstPlayer?.socket.emit('startGame');
-    this.emitToRoom(roomInfo, 'executeProgress', progress);
+    await this.emitEventAndUpdateProgressWithAck(
+      [firstPlayer?.socket],
+      roomInfo,
+      'startGame',
+      {},
+      progressID++,
+      `房主开始游戏`
+    );
 
-    try {
-      await new Promise<void>((resolve, reject) => {
-        firstPlayer?.socket.once('startGame:success', resolve);
-        firstPlayer?.socket.once('startGame:fail', reject);
-        firstPlayer?.socket.once('disconnect', reject);
-      });
-      progress.message = "开始游戏成功";
-      progress.status = 1;
-      this.emitToRoom(roomInfo, 'executeProgress', progress);
-    } catch (e) {
-      this.logger.error(e);
-      progress.message = "开始游戏失败";
-      progress.status = 2;
-      this.emitToRoom(roomInfo, 'executeProgress', progress);
+    ck();
 
-      finishExecute();
-      return;
-    }
+    await this.emitEventAndUpdateProgressWithAck(
+      roomInfo.users.map((u) => u?.socket),
+      roomInfo,
+      'pick',
+      {},
+      progressID++,
+      `等待所有玩家选择英雄`,
+      "选择英雄失败",
+      "所有玩家选择英雄完成",
+      (n, t) => `等待所有玩家选择英雄，当前进度 ${n} / ${t}.`,
+    );
 
-    let playerReady = 0;
-    const playerCount = roomInfo.users.filter((u) => u !== null).length;
+    ck();
 
-    const genMsg = () => {
-      return `等待所有玩家选择英雄，当前进度 ${playerReady} / ${playerCount}.`;
-    }
-
-    this.emitToRoom(roomInfo, 'pick', {});
-    progress = { id: progressID++, message: genMsg(), status: 0 };
-    this.emitToRoom(roomInfo, 'executeProgress', progress);
-
-    try {
-      await new Promise<void>((resolve, reject) => {
-        for (const user of roomInfo.users.filter((u) => u !== null)) {
-          user.socket.once('pick:success', () => {
-            playerReady++;
-            progress.message = genMsg();
-            this.emitToRoom(roomInfo, 'executeProgress', progress);
-            if (playerReady === playerCount) {
-              resolve();
-            }
-          });
-          user.socket.once('pick:fail', reject);
-        }
-      });
-    } catch (e) {
-      this.logger.error(e);
-      progress.message = "选择英雄失败";
-      progress.status = 2;
-      this.emitToRoom(roomInfo, 'executeProgress', progress);
-
-      finishExecute();
-      return;
-    }
-
-    progress.message = "所有玩家选择英雄完成";
-    progress.status = 1;
-    this.emitToRoom(roomInfo, 'executeProgress', progress);
-
-    finishExecute();
+    this.notifyRoom(roomInfo, 'finish');
+    roomInfo.status = 'waiting';
+    this.notifyRoom(roomInfo);
   }
 
   @SubscribeMessage('random')

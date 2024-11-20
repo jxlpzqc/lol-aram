@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { CreateRoomRequest, CreateRoomResult, ProgressDTO, RoomDTO, RoomInListDTO } from '../../../../types/contract';
+import { CreateRoomRequest, JoinRoomRequest, ProgressDTO, RoomDTO, RoomInListDTO } from '../../../../types/contract';
 import leagueHandler from "./league";
 import { v4 } from "uuid";
 import sessionService from "./session";
@@ -124,13 +124,13 @@ export async function executeGame(
     return {
       roomName: gameName,
       password
-    } as CreateRoomResult;
+    } as JoinRoomRequest;
   }
 
   const createRoomHandler = createHandler("createRoom", handleCreateRoom);
   socket.on("createRoom", createRoomHandler);
 
-  const handleJoinRoom = async ({ roomName, password, team }: CreateRoomResult) => {
+  const handleJoinRoom = async ({ roomName, password, team }: JoinRoomRequest) => {
     await leagueHandler.joinGame(roomName, password, sessionService.summonerId!, team);
   }
 

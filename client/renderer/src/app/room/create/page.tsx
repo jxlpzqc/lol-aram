@@ -45,7 +45,7 @@ export default function () {
             {failMsg && <div className="text-center text-red-500">{failMsg}</div>}
             <div className="flex justify-center">
                 <LeagueButtonGroup text="创建房间" onConfirm={async () => {
-                    gotoRoom(roomName);
+                    gotoRoom();
                 }} onCancel={() => {
                     router.back();
                 }} />

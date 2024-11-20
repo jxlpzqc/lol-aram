@@ -1,4 +1,4 @@
-import { UserDTO } from "../../../services/room";
+import { UserDTO } from "../../../../../../types/contract";
 
 type Props = {
   seats: (UserDTO | null)[];

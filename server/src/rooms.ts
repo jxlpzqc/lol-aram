@@ -26,6 +26,7 @@ export type RoomInfo = {
   status: RoomStatus;
   users: (UserAndSocket | null)[];
   roomGameDatas?: RoomGameData;
+  needStop?: boolean;
 };
 
 const rooms: RoomInfo[] = [];
@@ -85,6 +86,11 @@ export function getRoom(id: string): RoomInfo | undefined {
   return rooms.find((room) => room.id === id);
 }
 
+export function getRoomByUser(userid: string): RoomInfo | undefined {
+  // TODO: optimize it
+  return rooms.find((room) => room.users.find((u) => u?.user.id === userid));
+}
+
 export type RoomCreateOptions = {
   name: string;
   waitingTime: number;
@@ -121,7 +127,8 @@ export function quitRoom(roomID: string, userid: string) {
   const room = getRoom(roomID);
   if (room) {
     if (room.status !== 'waiting') {
-      throw new Error('Cannot quit room when game is in progress');
+      // throw new Error('Cannot quit room when game is in progress');
+      room.needStop = true;
     }
 
     room.users[room.users.findIndex((u) => u?.user.id === userid)] = null;

@@ -95,7 +95,7 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
           </div>
         </>
       ) : (
-        <div className='text-4xl py-4 font-bold font-sans text-center'>请在客户端选择您的英雄开始游戏</div>
+        <div className='text-4xl py-4 font-bold font-sans text-center'>准备作战！</div>
       )}
     </div>
     <div className='flex grow justify-between'>

@@ -10,3 +10,5 @@ files:
       - package.json
       - app
 publish: null
+win:
+  requestedExecutionLevel: "requireAdministrator"

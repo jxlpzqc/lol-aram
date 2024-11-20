@@ -37,7 +37,7 @@ export type CreateRoomRequest = {
 export type JoinRoomRequest = {
   roomName: string;
   password: string;
-  team: 'blue' | 'red';
+  team?: 'blue' | 'red';
 }
 
 export type ProgressDTO = {
