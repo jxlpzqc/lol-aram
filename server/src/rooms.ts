@@ -108,6 +108,11 @@ export function joinRoom(
       throw new Error('User already in room');
     }
   } else {
+    if (!roomCreateOptions.name)
+      throw new Error('Name must be provided when creating a new room');
+    if (roomCreateOptions.waitingTime < 5 || roomCreateOptions.waitingTime > 300)
+      throw new Error('Waiting time must be between 5 and 300 seconds');
+
     room = createRoom(roomCreateOptions, user, socket);
   }
 

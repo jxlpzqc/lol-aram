@@ -261,17 +261,42 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     let progressID = 0;
 
-    await this.emitEventAndUpdateProgressWithAck(
-      roomInfo.users.map((u) => u?.socket),
-      roomInfo,
-      'prepareExecute',
-      {},
-      progressID++,
-      "等待所有玩家准备好启动游戏",
-      "未收到所有玩家的准备执行响应",
-      "所有玩家准备执行完成",
-      (n, t) => `等待所有玩家准备好启动游戏，当前进度 ${n} / ${t}.`
-    );
+    let preparedCount = 0;
+    await new Promise<void>((resolve, reject) => {
+      const ausers = roomInfo.users.filter((u) => u !== null);
+      for (const user of ausers) {
+        if (user !== null) {
+          user.socket.once('prepareExecute', () => {
+            preparedCount++;
+            if (preparedCount === ausers.length) {
+              this.emitToRoom(roomInfo, 'executeProgress', {
+                id: progressID,
+                message: '所有玩家准备执行完成',
+                status: 1
+              });
+              resolve();
+            } else {
+              this.emitToRoom(roomInfo, 'executeProgress', {
+                id: progressID,
+                message: '等待所有玩家准备执行，当前进度 ' + preparedCount + ' / ' + ausers.length,
+                status: 0
+              });
+            }
+          });
+          setTimeout(() => {
+            if (preparedCount !== ausers.length) {
+              this.emitToRoom(roomInfo, 'executeProgress', {
+                id: progressID,
+                message: '在超时限制内未收到所有玩家的准备就绪',
+                status: 2
+              });
+              reject(new Error('等待所有玩家准备执行超时'));
+            }
+          }, 20000);
+        }
+      }
+    });
+    ++progressID;
 
     // First player create room
     const firstPlayer = roomInfo.users.find((u) => u !== null);

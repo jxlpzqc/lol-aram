@@ -152,7 +152,7 @@ export async function executeGame(
   const pickHandler = createHandler("pick", handlePick);
   socket.on("pick", pickHandler);
 
-  await socket.emitWithAck("prepareExecute");
+  socket.emit("prepareExecute");
 
   const ret = await new Promise<RoomDTO>((resolve, _reject) => {
     socket.once("finish", resolve);

@@ -14,13 +14,13 @@ export default function Home() {
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
 
-  const fetchRooms = async () => {
+  const fetchRooms = async (withoutLoading: boolean = false) => {
     if (!sessionService.registed) {
       setStatus(2);
       setFailMsg("请先配置服务器！");
       return;
     }
-    setStatus(0);
+    if (!withoutLoading) setStatus(0);
     try {
       setRooms(await getAllRooms());
       setStatus(1);
@@ -46,13 +46,15 @@ export default function Home() {
 
   useEffect(() => {
     fetchRooms();
-  }, []);
 
-  useEffect(() => {
-    if (!sessionService.registed) {
-      router.push("/user");
+    const interval = setInterval(() => {
+      fetchRooms(true);
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
     }
-  });
+  }, []);
 
   let body;
 
