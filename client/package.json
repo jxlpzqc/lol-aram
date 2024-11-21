@@ -1,14 +1,20 @@
 {
-  "name": "client",
-  "version": "0.1.0",
+  "name": "league-of-pride",
+  "version": "0.1.2",
   "private": true,
   "main": "app/background.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jxlpzqc/lol-aram"
+  },
   "scripts": {
     "dev": "nextron",
-    "build": "nextron build",
+    "build": "nextron build --publish never",
+    "build:publish": "nextron build --publish always",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "electron-updater": "^6.3.9",
     "league-connect": "^6.0.0-rc13",
     "socket.io-client": "^4.8.1",
     "uuid": "^11.0.3"
