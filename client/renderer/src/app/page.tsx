@@ -92,7 +92,7 @@ export default function Home() {
         房间列表
       </h1>
       <div className="flex justify-end">
-        <button className="league-btn mx-4" onClick={fetchRooms}>刷新</button>
+        <button className="league-btn mx-4" onClick={() => { fetchRooms() }}>刷新</button>
         <button className="league-btn mx-4" onClick={createRoom}>新建房间</button>
         <button className="league-btn mx-4" onClick={setUser}>配置</button>
       </div>
