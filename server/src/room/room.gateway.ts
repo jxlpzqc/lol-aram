@@ -311,6 +311,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     ck();
 
+    this.emitToRoom(roomInfo, 'executeProgress', {
+      id: progressID,
+      message: '请稍等',
+      status: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    ck();
+
     for (const otherUser of roomInfo.users.filter((u) => u !== firstPlayer && u !== null)) {
 
       await this.emitEventAndUpdateProgressWithAck(
