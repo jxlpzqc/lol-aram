@@ -199,7 +199,7 @@ export async function selectChampion(championId: number) {
             body: {
                 "type": type,
                 "championId": championList[championId].id,
-                "completed": true
+                // "completed": true
             }
         }, credentials);
 
