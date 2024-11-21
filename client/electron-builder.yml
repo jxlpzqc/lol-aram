@@ -9,6 +9,8 @@ files:
     filter:
       - package.json
       - app
-publish: null
+publish: 
+  - github
 win:
   requestedExecutionLevel: "requireAdministrator"
+  icon: resource/icon.png
