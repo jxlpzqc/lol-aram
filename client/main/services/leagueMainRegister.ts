@@ -19,8 +19,8 @@ export function registLeagueService() {
     ipcMain.handle('league:startGame', async () => {
         return await startGame();
     });
-    ipcMain.handle('league:getOwnedChampions', async () => {
-        return await getOwnedChampions();
+    ipcMain.handle('league:getOwnedChampions', async (_event, summonerID: string) => {
+        return await getOwnedChampions(summonerID);
     });
     ipcMain.handle('league:selectChampion', async (_event, championId: number) => {
         return await selectChampion(championId);

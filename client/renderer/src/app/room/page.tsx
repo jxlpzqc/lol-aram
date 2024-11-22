@@ -50,7 +50,7 @@ export default function Room() {
   const connectToRoom = async () => {
     let championList;
     try {
-      championList = await leagueHandler.getOwnedChampions();
+      championList = await leagueHandler.getOwnedChampions(sessionService.summonerId!);
     } catch (e) {
       setConnectionFailedReason("无法从客户端获取英雄列表");
     }

@@ -14,8 +14,8 @@ const _leagueBridge = {
     startGame: async () => {
         await ipcRenderer.invoke('league:startGame');
     },
-    getOwnedChampions: async () => {
-        const ret = await ipcRenderer.invoke('league:getOwnedChampions');
+    getOwnedChampions: async (summonerID: string) => {
+        const ret = await ipcRenderer.invoke('league:getOwnedChampions', summonerID);
         return ret as number[];
     },
     selectChampion: async (championId: number) => {

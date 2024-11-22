@@ -134,7 +134,7 @@ export async function joinGame(gameName: string, password: string, summonerID: s
 
     // const currentSummonerId = summonerData.summonerId;
 
-    await ensureSummonerInTeam(credentials,summonerID, team);
+    await ensureSummonerInTeam(credentials, summonerID, team);
 }
 
 export async function startGame() {
@@ -148,11 +148,11 @@ export async function startGame() {
     }
 }
 
-export async function getOwnedChampions(): Promise<number[]> {
+export async function getOwnedChampions(summonerID: string): Promise<number[]> {
     const credentials = await authenticate();
     const resp = await createHttp1Request({
         method: 'GET',
-        url: '/lol-champions/v1/owned-champions-minimal',
+        url: `/lol-champions/v1/inventories/${summonerID}/champions-minimal`,
     }, credentials);
 
     if (!resp.ok) {
@@ -160,8 +160,9 @@ export async function getOwnedChampions(): Promise<number[]> {
     }
 
     const d = await resp.json();
-    // console.log(championList)
-    return d.map((champion: any) => championList.findIndex(x => x.id == champion.id));
+    console.log(d);
+    return d.filter(x => x?.freeToPlay || x?.ownership?.owned)
+        .map((champion: any) => championList.findIndex(x => x.id == champion.id));
 }
 
 export async function selectChampion(championId: number) {
