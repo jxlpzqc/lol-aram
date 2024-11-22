@@ -2,6 +2,8 @@ import styles from './ChampionPick.module.css'
 import champions from '../../../../public/assets/champions.json'
 import sessionService from '../../../services/session';
 import { UserDTO } from '../../../../../../types/contract';
+import { useEffect } from 'react';
+import { playSoundByChampionIdx } from '../../../services/sound';
 
 type PlayerCardProps = {
   isRight?: boolean;
@@ -60,6 +62,11 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
   const self = seats?.find(x => x?.id === sessionService.sessionID);
   const selfChampionID = self?.gameData?.champion;
   const selfSkinURL = selfChampionID ? championList[selfChampionID].skinURL : "";
+
+  useEffect(() => {
+    if (!selfChampionID) return;
+    playSoundByChampionIdx(selfChampionID);
+  }, [selfChampionID]);
 
   const containerStyles = {
     background: `no-repeat center / 80% url('/images/ban-ring-component.svg'),
