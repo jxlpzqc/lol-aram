@@ -14,6 +14,6 @@ export function playSound(url: string) {
 export function playSoundByChampionIdx(championIdx: number) {
     if (championIdx < 0 || championIdx >= championList.length) return;
 
-    const url = championList[championIdx].pickSoundURL;
+    const url = championList[championIdx]?.pickSoundURL;
     if (url) playSound(url);
 }

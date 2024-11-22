@@ -61,7 +61,7 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
 
   const self = seats?.find(x => x?.id === sessionService.sessionID);
   const selfChampionID = self?.gameData?.champion;
-  const selfSkinURL = selfChampionID ? championList[selfChampionID].skinURL : "";
+  const selfSkinURL = selfChampionID ? championList[selfChampionID]?.skinURL : "";
 
   useEffect(() => {
     if (!selfChampionID) return;
@@ -84,7 +84,7 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
           {
             new Array(10).fill(0).map((_, i) => {
               const item = availableChampions && availableChampions.length > i ?
-                <img src={championList[availableChampions[i]].portraitURL} /> : null;
+                <img src={championList[availableChampions[i]]?.portraitURL} /> : null;
 
               return <div onClick={() => {
                 if (availableChampions && availableChampions.length > i)
