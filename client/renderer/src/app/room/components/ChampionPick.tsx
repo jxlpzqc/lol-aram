@@ -98,7 +98,7 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
 
         </div>
           <div className='flex w-[700px] mx-auto flex-col items-center text-4xl font-bold font-sans'>
-            <div className='h-1' style={{ background: '#2fb3d8', width: `${percentage}%` }}></div>
+            <div className='h-1' style={{ background: '#2fb3d8', width: `${percentage}%`, transition: 'all 1s linear' }}></div>
             <div className='mt-2'>{remainingTime}</div>
           </div>
         </>
