@@ -12,7 +12,7 @@ import { first, map } from 'rxjs/operators';
 import { Server, Socket } from 'socket.io';
 import * as rooms from '../rooms';
 import { Logger } from '@nestjs/common';
-import { JoinRoomRequest, CreateRoomRequest, ProgressDTO } from '../../../types/contract';
+import { JoinRoomRequest, CreateRoomRequest, ProgressDTO } from '@shared/contract';
 
 @WebSocketGateway({
   cors: {
@@ -385,7 +385,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('end')
   exit(client: Socket) {
     const roomInfo = this.socketToRoomInfo(client);
-    rooms.exitGame(roomInfo.id);
-    this.emitToRoom(roomInfo, 'end', {});
+    roomInfo.needStop = true;
   }
 }

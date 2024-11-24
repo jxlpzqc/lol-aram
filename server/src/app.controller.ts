@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import * as rooms from './rooms';
-import { RoomInListDTO } from '../../types/contract';
+import { RoomInListDTO } from '@shared/contract';
 
 @Controller()
 export class AppController {

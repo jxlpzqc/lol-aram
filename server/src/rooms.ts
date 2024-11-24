@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Socket } from 'socket.io';
 
-import type { GameDataDTO, RoomDTO, RoomStatus, UserDTO } from '../../types/contract';
+import type { GameDataDTO, RoomDTO, RoomStatus, UserDTO } from '@shared/contract';
 
 export type RoomGameData = {
   blueTeamAvailableChampions: number[];
@@ -36,7 +36,6 @@ function generateID(): string {
 }
 
 const MAX_SEATS = 10;
-const CHAMPIONS = 169;
 const MAX_RANDOM = 2;
 
 function createRoom(opts: RoomCreateOptions, user: UserInfo, socket: Socket): RoomInfo {
@@ -214,24 +213,8 @@ export function randomChampion(roomID: string, userid: string) {
   user.gameData.remainRandom--;
 }
 
-export function exitGame(roomID: string) {
-  const room = getRoom(roomID);
-  if (!room) {
-    throw new Error('Room not found');
-  }
-  if (room.status !== 'playing')
-    throw new Error("Only game in playing mode can be exited");
-  room.status = 'waiting';
-  room.roomGameDatas = undefined;
-  room.users.forEach((u) => {
-    if (u) {
-      u.user.gameData = undefined;
-    }
-  });
-}
-
 export function pickChampion(roomID: string, userid: string, champion: number) {
-  if (champion < 0 || champion >= CHAMPIONS) {
+  if (champion == 0) {
     throw new Error('Invalid champion');
   }
   const room = getRoom(roomID);
