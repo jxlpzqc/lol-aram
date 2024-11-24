@@ -3,7 +3,7 @@ productName: League of PRIDE
 copyright: Copyright © Cheng Ziqiu
 directories:
   output: dist
-  buildResources: resources
+  buildResources: resource
 files:
   - from: .
     filter:
@@ -13,4 +13,4 @@ publish:
   - github
 win:
   requestedExecutionLevel: "requireAdministrator"
-  icon: resource/icon.png
+  icon: resources/icon.ico

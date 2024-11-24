@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { authenticate, createHttp1Request } from 'league-connect';
-import championList from '../../renderer/public/assets/champions.json';
+import championList from '@renderer/public/assets/champions.json';
 
 export async function isLeagueRunning() {
     try {
