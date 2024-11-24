@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { ProgressDTO, RoomDTO, UserDTO } from "../../../../../../types/contract"
+import { ProgressDTO, RoomDTO, UserDTO } from "@shared/contract"
 import LeagueButtonGroup from "../../../components/LeagueButtonGroup";
 import { useEffect, useRef } from "react";
 import styles from "./GameExecutor.module.css";

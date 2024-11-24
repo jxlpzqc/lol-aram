@@ -1,9 +1,9 @@
 import styles from './ChampionPick.module.css'
-import champions from '../../../../public/assets/champions.json'
-import sessionService from '../../../services/session';
-import { UserDTO } from '../../../../../../types/contract';
+import champions from '@renderer/public/assets/champions.json'
+import sessionService from '@renderer/src/services/session';
+import { UserDTO } from '@shared/contract';
 import { useEffect } from 'react';
-import { playSoundByChampionIdx } from '../../../services/sound';
+import { playSoundByChampionIdx } from '@renderer/src/services/sound';
 
 type PlayerCardProps = {
   isRight?: boolean;
@@ -55,9 +55,10 @@ type ChampionPickProps = {
   diceNumber?: number;
   onChange?: (championID: number) => void;
   onRandom?: () => void;
+  onEnd?: () => void;
 };
 
-export default function ({ seats, remainingTime, totalTime, finished, diceNumber, availableChampions, onChange, onRandom }: ChampionPickProps) {
+export default function ({ seats, remainingTime, totalTime, finished, diceNumber, availableChampions, onChange, onRandom, onEnd }: ChampionPickProps) {
 
   const self = seats?.find(x => x?.id === sessionService.sessionID);
   const selfChampionID = self?.gameData?.champion;
@@ -127,6 +128,13 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
             <PlayerCard key={i} isRight={true} gameID={seat.gameID} name={seat.name} championID={seat.gameData?.champion} />
           ))
         }
+      </div>
+    </div>
+    <div className='fixed bottom-0 w-full'>
+      <div className='flex justify-end items-center m-8'>
+        <button className='league-btn' onClick={() => {
+          onEnd?.();
+        }}>退出游戏</button>
       </div>
     </div>
   </div>

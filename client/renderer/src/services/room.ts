@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { CreateRoomRequest, JoinRoomRequest, ProgressDTO, RoomDTO, RoomInListDTO } from '../../../../types/contract';
+import { CreateRoomRequest, JoinRoomRequest, ProgressDTO, RoomDTO, RoomInListDTO } from '@shared/contract';
 import leagueHandler from "./league";
 import { v4 } from "uuid";
 import sessionService from "./session";

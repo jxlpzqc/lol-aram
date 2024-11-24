@@ -1,4 +1,4 @@
-import championList from '../../public/assets/champions.json';
+import championList from '@renderer/public/assets/champions.json';
 let _audio: HTMLAudioElement | null = null;
 
 export function playSound(url: string) {

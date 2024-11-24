@@ -1,4 +1,4 @@
-import { UserDTO } from "../../../../../../types/contract";
+import { UserDTO } from "@shared/contract";
 
 type Props = {
   seats: (UserDTO | null)[];

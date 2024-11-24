@@ -6,12 +6,11 @@ import RoomWaiting from './components/RoomWaiting';
 import { changeSeat, executeGame, getRoomSocket, startGame } from '../../services/room';
 import LeagueButtonGroup from '../../components/LeagueButtonGroup';
 import ChampionPick from './components/ChampionPick';
-import { RoomDTO, UserDTO, ProgressDTO } from '../../../../../types/contract';
+import { RoomDTO, UserDTO, ProgressDTO } from '@shared/contract';
 import sessionService from '../../services/session';
 import FailPage from '../../components/FailPage';
 import LoadingPage from '../../components/LoadingPage';
 import GameExecutor from './components/GameExecutor';
-import { LeagueClient } from 'league-connect';
 import leagueHandler from '../../services/league';
 
 function Connecting() {
@@ -162,6 +161,8 @@ export default function Room() {
             socket.current?.emit('random');
           }} onChange={async (championID) => {
             socket.current?.emit('pick', { champion: championID });
+          }} onEnd={async () => {
+            socket.current?.emit('end');
           }}
         />
         {status !== 1 && <div className=' bg-[#000000aa] fixed w-full h-full left-0 top-0 flex justify-center items-center'>
