@@ -201,7 +201,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       socket.emit(event, data);
     }
 
-    const RETRIES = 2;
+    const RETRIES = 3;
     const retryTimes = new Array<number>(sockets.length).fill(0);
 
     try {
