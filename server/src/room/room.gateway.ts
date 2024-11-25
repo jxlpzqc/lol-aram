@@ -223,6 +223,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
 
             if (ready === sockets.length) {
+              timeoutHandle && clearTimeout(timeoutHandle);
               resolve(ret);
             }
           });
@@ -234,14 +235,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsgWhenFail + "，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               this.emitToRoom(roomInfo, 'executeProgress', p);
+              timeoutHandle && clearTimeout(timeoutHandle);
+              timeoutHandle = setTimeout(onTimeout, timeout);
               socket.once(event + ':fail', onFail);
               socket.emit(event, data);
             } else {
+              timeoutHandle && clearTimeout(timeoutHandle);
               reject?.(data);
             }
           }
 
           socket.once(event + ':fail', onFail);
+
+          let timeoutHandle: NodeJS.Timeout;
 
           const onTimeout = () => {
             this.logger.error(`Client ${socket.handshake.query.id} timeout to ${event}`);
@@ -250,14 +256,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsg + "超时，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               this.emitToRoom(roomInfo, 'executeProgress', p);
-              setTimeout(onTimeout, timeout);
+              timeoutHandle = setTimeout(onTimeout, timeout);
               socket.emit(event, data);
             } else {
               reject?.(new Error(progressMsg + "超时"));;
             }
           };
 
-          setTimeout(onTimeout, timeout);
+          timeoutHandle = setTimeout(onTimeout, timeout);
 
           socket.once('disconnect', reject);
         }
