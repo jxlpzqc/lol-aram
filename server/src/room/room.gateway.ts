@@ -233,6 +233,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsgWhenFail + "，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
+              this.emitToRoom(roomInfo, 'executeProgress', p);
               socket.once(event + ':fail', onFail);
               socket.emit(event, data);
             } else {
@@ -248,6 +249,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsg + "超时，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
+              this.emitToRoom(roomInfo, 'executeProgress', p);
               setTimeout(onTimeout, timeout);
               socket.emit(event, data);
             } else {
