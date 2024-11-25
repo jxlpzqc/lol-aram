@@ -231,7 +231,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.logger.error(`Client ${socket.handshake.query.id} failed to ${event}: ${data}`);
             retryTimes[sockets.indexOf(socket)]++;
             if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
-              this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket])})`);
+              this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsgWhenFail + "，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               socket.once(event + ':fail', onFail);
               socket.emit(event, data);
@@ -246,7 +246,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.logger.error(`Client ${socket.handshake.query.id} timeout to ${event}`);
             retryTimes[sockets.indexOf(socket)]++;
             if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
-              this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket])})`);
+              this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsg + "超时，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               setTimeout(onTimeout, timeout);
               socket.emit(event, data);
