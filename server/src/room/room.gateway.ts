@@ -201,6 +201,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       socket.emit(event, data);
     }
 
+    const RETRIES = 2;
+    const retryTimes = new Array<number>(sockets.length).fill(0);
+
     try {
       return await new Promise<T[]>((resolve, reject) => {
         const ret = new Array<T>(sockets.length);
@@ -223,12 +226,36 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               resolve(ret);
             }
           });
-          socket.once(event + ':fail', reject);
 
-          // timeout
-          setTimeout(() => {
-            reject?.(new Error(progressMsg + "超时"));;
-          }, timeout);
+          const onFail = (data: any) => {
+            this.logger.error(`Client ${socket.handshake.query.id} failed to ${event}: ${data}`);
+            retryTimes[sockets.indexOf(socket)]++;
+            if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
+              this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket])})`);
+              p.message = progressMsgWhenFail + "，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
+              socket.once(event + ':fail', onFail);
+              socket.emit(event, data);
+            } else {
+              reject?.(data);
+            }
+          }
+
+          socket.once(event + ':fail', onFail);
+
+          const onTimeout = () => {
+            this.logger.error(`Client ${socket.handshake.query.id} timeout to ${event}`);
+            retryTimes[sockets.indexOf(socket)]++;
+            if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
+              this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket])})`);
+              p.message = progressMsg + "超时，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
+              setTimeout(onTimeout, timeout);
+              socket.emit(event, data);
+            } else {
+              reject?.(new Error(progressMsg + "超时"));;
+            }
+          };
+
+          setTimeout(onTimeout, timeout);
 
           socket.once('disconnect', reject);
         }
