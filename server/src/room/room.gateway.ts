@@ -228,8 +228,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
           });
 
-          const onFail = (data: any) => {
-            this.logger.error(`Client ${socket.handshake.query.id} failed to ${event}: ${data}`);
+          const onFail = (failData: any) => {
+            this.logger.error(`Client ${socket.handshake.query.id} failed to ${event}: ${failData}`);
             retryTimes[sockets.indexOf(socket)]++;
             if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
@@ -241,7 +241,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               socket.emit(event, data);
             } else {
               timeoutHandle && clearTimeout(timeoutHandle);
-              reject?.(data);
+              reject?.(failData);
             }
           }
 
