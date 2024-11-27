@@ -208,8 +208,23 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return await new Promise<T[]>((resolve, reject) => {
         const ret = new Array<T>(sockets.length);
         let ready = 0;
+        let timeoutHandles = new Array<NodeJS.Timeout | undefined>(sockets.length).fill(undefined);
+
         for (const socket of sockets) {
-          socket.once(event + ':success', (data) => {
+          let timeoutHandle = timeoutHandles[sockets.indexOf(socket)];
+          const cleanupCallbacks = () => {
+            socket.off(event + ':success', onSuccess);
+            socket.off(event + ':fail', onFail);
+            socket.off('disconnect', onDisconnect);
+            timeoutHandle && clearTimeout(timeoutHandle);
+          };
+
+          const resetTimeout = () => {
+            timeoutHandle && clearTimeout(timeoutHandle);
+            timeoutHandle = setTimeout(onTimeout, timeout);
+          }
+
+          const onSuccess = (data: any) => {
             ret[sockets.indexOf(socket)] = data;
             ++ready;
 
@@ -224,30 +239,31 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             if (ready === sockets.length) {
               timeoutHandle && clearTimeout(timeoutHandle);
+              cleanupCallbacks();
               resolve(ret);
             }
-          });
+          };
 
           const onFail = (failData: any) => {
+            // NOTE: ignore joinRoom fail when already in game
+            if (event === 'joinRoom' && `${failData}`.includes("because you are already in game")) {
+              cleanupCallbacks();
+              resolve(undefined);
+            }
+
             this.logger.error(`Client ${socket.handshake.query.id} failed to ${event}: ${failData}`);
             retryTimes[sockets.indexOf(socket)]++;
             if (retryTimes[sockets.indexOf(socket)] < RETRIES) {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsgWhenFail + "，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               this.emitToRoom(roomInfo, 'executeProgress', p);
-              timeoutHandle && clearTimeout(timeoutHandle);
-              timeoutHandle = setTimeout(onTimeout, timeout);
-              socket.once(event + ':fail', onFail);
+              resetTimeout();
               socket.emit(event, data);
             } else {
-              timeoutHandle && clearTimeout(timeoutHandle);
+              cleanupCallbacks();
               reject?.(failData);
             }
           }
-
-          socket.once(event + ':fail', onFail);
-
-          let timeoutHandle: NodeJS.Timeout;
 
           const onTimeout = () => {
             this.logger.error(`Client ${socket.handshake.query.id} timeout to ${event}`);
@@ -256,16 +272,24 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               this.logger.log(`Retrying ${event} for ${socket.handshake.query.id} (${retryTimes[sockets.indexOf(socket)]})`);
               p.message = progressMsg + "超时，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               this.emitToRoom(roomInfo, 'executeProgress', p);
-              timeoutHandle = setTimeout(onTimeout, timeout);
+              resetTimeout();
               socket.emit(event, data);
             } else {
+              cleanupCallbacks();
               reject?.(new Error(progressMsg + "超时"));;
             }
           };
 
-          timeoutHandle = setTimeout(onTimeout, timeout);
+          const onDisconnect = () => {
+            this.logger.error(`Client ${socket.handshake.query.id} disconnected`);
+            cleanupCallbacks();
+            reject?.(new Error(progressMsg + "失败，客户端断开连接"));
+          }
 
-          socket.once('disconnect', reject);
+          socket.on(event + ':success', onSuccess);
+          socket.on(event + ':fail', onFail);
+          socket.on('disconnect', onDisconnect);
+          resetTimeout();
         }
       });
 
