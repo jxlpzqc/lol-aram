@@ -260,7 +260,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               resetTimeout();
               setTimeout(() => {
                 socket.emit(event, data);
-              }, 5000);
+              }, 2000);
             } else {
               cleanupCallbacks();
               reject?.(failData);
