@@ -61,6 +61,7 @@ type ChampionPickProps = {
 export default function ({ seats, remainingTime, totalTime, finished, diceNumber, availableChampions, onChange, onRandom, onEnd }: ChampionPickProps) {
 
   const self = seats?.find(x => x?.id === sessionService.sessionID);
+  const selfPlayableChampions = self?.ownedChampions;
   const selfChampionID = self?.gameData?.champion;
   const selfSkinURL = selfChampionID ? championList[selfChampionID]?.skinURL : "";
 
@@ -87,10 +88,12 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
               const item = availableChampions && availableChampions.length > i ?
                 <img src={championList[availableChampions[i]]?.portraitURL} /> : null;
 
-              return <button onClick={() => {
+              return <button disabled={
+                availableChampions && !selfPlayableChampions?.includes(availableChampions[i])
+              } onClick={() => {
                 if (availableChampions && availableChampions.length > i)
                   onChange?.(availableChampions[i]);
-              }} key={i} className='h-12 w-12 border-slate-700 border-2 mx-2 bg-[#eeeeee33] hover:border-slate-400 hover:brightness-150 active:brightness-90'>
+              }} key={i} className='h-12 w-12 border-slate-700 border-2 mx-2 bg-[#eeeeee33] hover:border-slate-400 hover:brightness-150 active:brightness-90 disabled:grayscale'>
                 {item}
               </button>
             })
