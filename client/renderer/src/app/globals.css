@@ -28,8 +28,14 @@ body {
 }
 
 .league-btn:hover {
-  border: 1px solid #ffe18a;
-  color: #ffe18a;
+  border: 1px solid #fde395;
+  background: #21272f;
+  color: #fde395;
+}
+
+.league-btn:active {
+  border: 1px solid #dbbd7e;
+  color: #dbbd7e;
 }
 
 .league-input {
@@ -41,6 +47,7 @@ body {
 
 .league-input:focus {
   border: 1px solid #ffe18a;
+  background: #2d3640;
   outline: none;
 }
 

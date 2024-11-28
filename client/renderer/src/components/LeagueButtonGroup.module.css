@@ -1,5 +1,5 @@
 .left {
-  @apply h-8 w-8 rounded-full p-2;
+  @apply h-8 w-8 rounded-full p-2 hover:brightness-150 active:brightness-90;
 
   background: #1e232a;
   border: 2px solid #8a6b2a;
@@ -10,8 +10,12 @@
 }
 
 .right {
-  @apply py-1 px-10;
+  @apply py-1 px-10 ;
   color: #a3c7c7;
   border-top: 2px solid #0596aa;
   border-bottom: 2px solid #0596aa;
+}
+
+.right-container {
+  @apply flex hover:brightness-150 active:brightness-90;
 }

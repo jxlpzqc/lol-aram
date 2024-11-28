@@ -17,22 +17,24 @@ export default function ({ text, onCancel, onConfirm }: Props) {
   return <div className='flex items-center'>
     <button onClick={onCancel} className={styles.left}><CrossSvg /></button>
 
-    <svg className='inline' style={{ marginLeft: 4, marginRight: -10, height: "calc(1em + 20px)" }} viewBox='0 0 30 100'>
-      <path stroke='#0596aa' fill='transparent' strokeWidth={6} d="
+    <button onClick={onConfirm} className={styles['right-container']}>
+      <svg className='inline' style={{ marginLeft: 4, marginRight: -10, height: "calc(1em + 20px)" }} viewBox='0 0 30 100'>
+        <path stroke='#0596aa' fill='transparent' strokeWidth={6} d="
       M 0 0
       Q 30 50, 0 100
       "/>
-    </svg>
+      </svg>
 
-    <button onClick={onConfirm} className={styles.right}>{text}</button>
+      <div className={styles.right}>{text}</div>
 
-    <svg className='inline' style={{ marginLeft: -2, marginRight: 20, height: "calc(1em + 20px)" }} viewBox='0 0 50 100'>
-      <path stroke='#0596aa' fill='transparent' strokeWidth={6} d="
+      <svg className='inline' style={{ marginLeft: -2, marginRight: 20, height: "calc(1em + 20px)" }} viewBox='0 0 50 100'>
+        <path stroke='#0596aa' fill='transparent' strokeWidth={6} d="
       M 0 0
       L 50 50
       L 0 100
       "/>
-    </svg>
+      </svg>
+    </button>
   </div>
 
 
