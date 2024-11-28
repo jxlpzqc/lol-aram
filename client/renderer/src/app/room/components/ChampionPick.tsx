@@ -87,12 +87,12 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
               const item = availableChampions && availableChampions.length > i ?
                 <img src={championList[availableChampions[i]]?.portraitURL} /> : null;
 
-              return <div onClick={() => {
+              return <button onClick={() => {
                 if (availableChampions && availableChampions.length > i)
                   onChange?.(availableChampions[i]);
-              }} key={i} className='h-12 w-12 border-slate-700 border-2 mx-2 bg-[#eeeeee33]'>
+              }} key={i} className='h-12 w-12 border-slate-700 border-2 mx-2 bg-[#eeeeee33] hover:border-slate-400 hover:brightness-150 active:brightness-90'>
                 {item}
-              </div>
+              </button>
             })
           }
 
@@ -130,12 +130,10 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
         }
       </div>
     </div>
-    <div className='fixed bottom-0 w-full'>
-      <div className='flex justify-end items-center m-8'>
-        <button className='league-btn' onClick={() => {
-          onEnd?.();
-        }}>退出游戏</button>
-      </div>
+    <div className='fixed bottom-8 right-8'>
+      <button className='league-btn' onClick={() => {
+        onEnd?.();
+      }}>退出游戏</button>
     </div>
   </div>
 }
