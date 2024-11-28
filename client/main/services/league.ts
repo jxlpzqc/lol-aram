@@ -16,13 +16,20 @@ export async function isLeagueRunning() {
 async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue' | 'red') {
     const currentSummonerId = summonerID;
 
-    const lobbyResp = await createHttp1Request({
+    let lobbyResp = await createHttp1Request({
         method: 'GET',
         url: `/lol-lobby/v2/lobby`,
     }, credentials);
 
     if (!lobbyResp.ok) {
-        throw new Error(`获取房间信息失败！${JSON.stringify(await lobbyResp.json(), null, 2)}`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        lobbyResp = await createHttp1Request({
+            method: 'GET',
+            url: `/lol-lobby/v2/lobby`,
+        }, credentials);
+
+        if (!lobbyResp.ok)
+            throw new Error(`获取房间信息失败！${JSON.stringify(await lobbyResp.json(), null, 2)}`);
     }
 
     const lobbyData = await lobbyResp.json();
@@ -117,22 +124,12 @@ export async function joinGame(gameName: string, password: string, summonerID: s
     }, credentials);
 
     if (!joinResp.ok) {
-        throw new Error(`加入房间失败！${JSON.stringify(await joinResp.json(), null, 2)}`);
+        if ((await joinResp.json())?.message?.includes?.('com.riotgames.platform.game.PlayerAlreadyInGameException')) {
+            console.error('PlayerAlreadyInGameException: already in game');
+        } else {
+            throw new Error(`加入房间失败！${JSON.stringify(await joinResp.json(), null, 2)}`);
+        }
     }
-
-    // // then set team
-    // const summonerResp = await createHttp1Request({
-    //     method: 'GET',
-    //     url: '/lol-summoner/v1/current-summoner',
-    // }, credentials);
-
-    // if (!summonerResp.ok) {
-    //     throw new Error(`获取召唤师信息失败！${JSON.stringify(await summonerResp.json(), null, 2)}`);
-    // }
-
-    // const summonerData = await summonerResp.json();
-
-    // const currentSummonerId = summonerData.summonerId;
 
     await ensureSummonerInTeam(credentials, summonerID, team);
 }
