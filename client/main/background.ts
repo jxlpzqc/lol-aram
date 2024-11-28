@@ -19,8 +19,8 @@ let mainWindow: BrowserWindow | undefined;
   await app.whenReady()
 
   mainWindow = createWindow('main', {
-    width: 1000,
-    height: 600,
+    width: 1200,
+    height: 720,
     autoHideMenuBar: true,
     title: 'League of PRIDE',
     webPreferences: {
