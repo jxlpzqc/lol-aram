@@ -245,11 +245,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
           };
 
           const onFail = (failData: any) => {
-            // NOTE: ignore joinRoom fail when already in game
-            if (event === 'joinRoom' && `${failData}`.includes("because you are already in game")) {
-              cleanupCallbacks();
-              resolve(undefined);
-            }
+            // // NOTE: ignore joinRoom fail when already in game
+            // if (event === 'joinRoom' && `${failData}`.includes("because you are already in game")) {
+            //   cleanupCallbacks();
+            //   resolve(undefined);
+            // }
 
             this.logger.error(`Client ${socket.handshake.query.id} failed to ${event}: ${failData}`);
             retryTimes[sockets.indexOf(socket)]++;
@@ -258,7 +258,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               p.message = progressMsgWhenFail + "，正在重试第 " + retryTimes[sockets.indexOf(socket)] + " 次";
               this.emitToRoom(roomInfo, 'executeProgress', p);
               resetTimeout();
-              socket.emit(event, data);
+              setTimeout(() => {
+                socket.emit(event, data);
+              }, 5000);
             } else {
               cleanupCallbacks();
               reject?.(failData);
