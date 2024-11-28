@@ -6,6 +6,7 @@ import sessionService from "../services/session";
 import LoadingPage from "../components/LoadingPage";
 import FailPage from "../components/FailPage";
 import { RoomInListDTO } from "@shared/contract";
+import LeaguePage from "../components/LeaguePage";
 
 
 export default function Home() {
@@ -62,6 +63,8 @@ export default function Home() {
     body = <LoadingPage noPage message="正在获取..." />
   } else if (status === 2) {
     body = <FailPage noPage reason={failMsg} buttonTitle="重试" onButtonClick={fetchRooms} />
+  } else if (rooms.length === 0) {
+    body = <div className="my-20 flex justify-center">暂无房间，请新建房间！</div>
   } else {
     body = <table className="table-auto w-full">
       <thead>
@@ -86,11 +89,7 @@ export default function Home() {
   }
 
   return (
-    <div className="m-8">
-      <h1 className="text-3xl font-sans font-bold">
-        <img src='/images/rift.png' className="w-10 h-10 inline-block mr-4" />
-        房间列表
-      </h1>
+    <LeaguePage title="房间列表">
       <div className="flex justify-end">
         <button className="league-btn mx-4" onClick={() => { fetchRooms() }}>刷新</button>
         <button className="league-btn mx-4" onClick={createRoom}>新建房间</button>
@@ -99,6 +98,6 @@ export default function Home() {
       <div className="my-8">
         {body}
       </div>
-    </div>
+    </LeaguePage>
   );
 }

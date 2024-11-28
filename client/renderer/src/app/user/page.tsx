@@ -8,6 +8,7 @@ import LoadingPage from "../../components/LoadingPage";
 import FailPage from "../../components/FailPage";
 import sessionService from "../../services/session";
 import { setVolume as soundServiceSetVolume } from '../../services/sound';
+import LeaguePage from "../../components/LeaguePage";
 
 export default function () {
 
@@ -68,11 +69,12 @@ export default function () {
   }
 
   return (
-    <div className="m-8">
-      <h1 className="text-3xl font-sans font-bold">
-        <img src='/images/rift.png' className="w-10 h-10 inline-block mr-4" />
-        欢迎
-      </h1>
+    <LeaguePage title="欢迎" showButton confirmText="进入" onConfirm={() => {
+      regist();
+    }} onCancel={() => {
+      router.back();
+    }}>
+
       <div className="my-8 *:my-2 flex flex-col max-w-[300px] mx-auto">
         <label className="block text-sm font-medium text-gray-100">服务器地址</label>
         <input type="text" className="league-input" placeholder="请输入服务器地址" value={server} onChange={(e) => {
@@ -95,16 +97,9 @@ export default function () {
         }} />
       </div>
 
-      <div className="flex justify-center">
-        <LeagueButtonGroup text="进入" onConfirm={async () => {
-          regist();
-        }} onCancel={() => {
-          router.back();
-        }} />
-      </div>
+    </LeaguePage>
 
 
-    </div>
   );
 
 }
