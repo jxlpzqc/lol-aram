@@ -8,7 +8,7 @@ type Props = {
 
 function SeatCard({ seat, onJoin, onKick }: { seat?: UserDTO | null, onJoin: () => void, onKick: () => void }) {
   return <div className="h-16 px-4 flex border-b-solid border-b-slate-600 border-b justify-between items-center">
-    {!seat ? <div>空</div> :
+    {!seat ? <div>（空）</div> :
       <div>
         <div>{seat.gameID}</div>
         <div className="text-sm">{seat.name}</div>
