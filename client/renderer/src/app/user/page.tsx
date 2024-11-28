@@ -7,6 +7,7 @@ import league from "../../services/league";
 import LoadingPage from "../../components/LoadingPage";
 import FailPage from "../../components/FailPage";
 import sessionService from "../../services/session";
+import { setVolume as soundServiceSetVolume } from '../../services/sound';
 
 export default function () {
 
@@ -19,6 +20,7 @@ export default function () {
 
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
+  const [volume, setVolume] = useState(50);
 
   const getInfo = async () => {
     setStatus(0);
@@ -46,6 +48,8 @@ export default function () {
         summonerName: gameID,
         summonerId: summonerId.current || ""
       });
+
+      soundServiceSetVolume(volume);
 
       globalThis?.localStorage?.setItem("realName", realName);
       globalThis?.localStorage?.setItem("gameID", gameID);
@@ -83,6 +87,11 @@ export default function () {
 
         <input type="text" className="league-input" readOnly placeholder="请输入游戏ID" value={gameID} onChange={(e) => {
           setGameID(e.target.value);
+        }} />
+
+        <label className="block text-sm font-medium text-gray-100">音效音量</label>
+        <input type="range" className="league-input-range" min="0" max="100" step="1" value={volume} onChange={(e) => {
+          setVolume(parseInt(e.target.value));
         }} />
       </div>
 

@@ -44,6 +44,39 @@ body {
   outline: none;
 }
 
+.league-input-range {
+  appearance: none;
+  background: transparent;
+  padding: 4px 0;
+}
+
+.league-input-range::-webkit-slider-runnable-track {
+  background: #675424;
+  height: 2px;
+  margin: 15px 0;
+  background-clip: content-box;
+}
+
+.league-input-range::-webkit-slider-thumb {
+  appearance: none;
+  position: relative;
+  top: -16px;
+  height: 32px;
+  width: 32px;
+  background-image: url(/images/slider-btn.png);
+  background-position: 0px 0px;
+  background-size: 32px auto;
+}
+
+
+.league-input-range:hover::-webkit-slider-thumb {
+  background-position: 0px -32px;
+}
+
+.league-input-range:active::-webkit-slider-thumb {
+  background-position: 0px -64px;
+}
+
 .typography ol,.typography ul {
   list-style: auto;
   margin-left: 1.2em;
