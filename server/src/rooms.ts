@@ -10,9 +10,7 @@ export type RoomGameData = {
 };
 
 export type GameData = GameDataDTO;
-export type UserInfo = UserDTO & {
-  ownedChampions: number[]
-};
+export type UserInfo = UserDTO;
 
 export type UserAndSocket = {
   user: UserInfo;
@@ -269,6 +267,7 @@ export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
         ? null
         : {
           ...x.user,
+          ownedChampions: x.user.id === userid ? x.user.ownedChampions : undefined,
           id: x.user.id === userid ? x.user.id : "<hidden>",
           gameData: (room.status !== 'playing' ||
             getSeatIndexGroup(i) === currentUserGroup) ?

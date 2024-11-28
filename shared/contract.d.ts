@@ -9,6 +9,7 @@ export type UserDTO = {
   name: string;
   gameID: string;
   gameData?: GameDataDTO;
+  ownedChampions?: number[];
 };
 
 export type RoomStatus = 'waiting' | 'playing' | 'executing';
