@@ -64,7 +64,10 @@ export default function Home() {
   } else if (status === 2) {
     body = <FailPage noPage reason={failMsg} buttonTitle="重试" onButtonClick={fetchRooms} />
   } else if (rooms.length === 0) {
-    body = <div className="my-20 flex justify-center">暂无房间，请新建房间！</div>
+    body = <div className="my-20 flex flex-col justify-center items-center">
+      <img src="/images/poro.svg" className="w-1/4 max-w-[200px]" />
+      <div className="text-xl mt-4">暂无房间，请新建房间</div>
+    </div>
   } else {
     body = <table className="table-auto w-full">
       <thead>
