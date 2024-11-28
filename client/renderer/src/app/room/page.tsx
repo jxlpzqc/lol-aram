@@ -135,20 +135,17 @@ export default function Room() {
     return <ConnectionFailed connectionFailedReason={connectionFailedReason} />;
   } else {
     if (status === 0) {
-      return <div className='m-8'>
-        <RoomWaiting seats={seats} onJoin={async (x) => {
+      return <RoomWaiting roomName={roomInfo.current?.name || "未知房间"}
+        time={roomInfo.current?.totalTime || 60}
+        seats={seats} onJoin={async (x) => {
           if (socket.current)
             await changeSeat(socket.current, x);
+        }} onStartGame={async () => {
+          if (socket.current)
+            await startGame(socket.current);
+        }} onQuit={() => {
+          router.replace('/');
         }} />
-        <div className='mt-20 mx-auto flex justify-center'>
-          <LeagueButtonGroup text='开始游戏' onConfirm={async () => {
-            if (socket.current)
-              await startGame(socket.current);
-          }} onCancel={() => {
-            router.replace('/');
-          }} />
-        </div>
-      </div>
     } else if (status === 1 || status === 2 || status === 3) {
       return <div className='h-screen w-screen'>
 

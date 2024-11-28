@@ -1,9 +1,14 @@
 import { UserDTO } from "@shared/contract";
+import LeaguePage from "../../../components/LeaguePage";
 
 type Props = {
+  roomName: string;
+  time: number;
   seats: (UserDTO | null)[];
   onJoin?: (seat: number) => void;
   onKick?: (seat: number) => void;
+  onStartGame?: () => void;
+  onQuit?: () => void;
 }
 
 function SeatCard({ seat, onJoin, onKick }: { seat?: UserDTO | null, onJoin: () => void, onKick: () => void }) {
@@ -24,28 +29,31 @@ function SeatCard({ seat, onJoin, onKick }: { seat?: UserDTO | null, onJoin: () 
   </div>
 }
 
-export default function ({ seats, onJoin, onKick }: Props) {
+export default function ({ roomName, time, seats, onJoin, onKick, onStartGame, onQuit }: Props) {
 
-  return <div className="flex w-full gap-x-8">
-    {
-      [0, 1].map((i) => (
-        <div className="w-1/2" key={i}>
-          <h3 className="px-4 font-bold text-xl">队伍{i + 1}</h3>
-          <div>
-            {
-              new Array(5).fill(0).map((_, j) => {
-                const seat = seats.length > i * 5 + j ? seats[i * 5 + j] : null;
-                return <SeatCard seat={seat} key={j} onJoin={() => {
-                  onJoin?.(i * 5 + j);
-                }} onKick={() => {
-                  onKick?.(i * 5 + j);
-                }}/>
-              })
-            }
+  return <LeaguePage title={roomName} showButton
+    confirmText="开始游戏" onConfirm={onStartGame} onCancel={onQuit} >
+    <div className="italic text-right pr-4">当前房间英雄选择时间：{time} 秒</div>
+    <div className="flex w-full max-w-[1200px] mx-auto gap-x-8">
+      {
+        [0, 1].map((i) => (
+          <div className="w-1/2" key={i}>
+            <h3 className="px-4 font-bold text-xl">队伍{i + 1}</h3>
+            <div>
+              {
+                new Array(5).fill(0).map((_, j) => {
+                  const seat = seats.length > i * 5 + j ? seats[i * 5 + j] : null;
+                  return <SeatCard seat={seat} key={j} onJoin={() => {
+                    onJoin?.(i * 5 + j);
+                  }} onKick={() => {
+                    onKick?.(i * 5 + j);
+                  }} />
+                })
+              }
+            </div>
           </div>
-        </div>
-      ))
-    }
-
-  </div>
+        ))
+      }
+    </div>
+  </LeaguePage>
 }
