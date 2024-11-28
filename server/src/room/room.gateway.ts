@@ -52,6 +52,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       rooms.quitRoom(rooms.getRoomByUser(userInfo.id)!.id, userInfo.id);
     }
 
+    if (userInfo.ownedChampions.length < 10) {
+      this.logger.error(`User ${userInfo.id} has less than 10 champions, could not join room`);
+      client.disconnect();
+    }
+
     let { roomID, roomName, waitingTime } = client.handshake.query;
 
     if (Array.isArray(roomID)) roomID = roomID[0];

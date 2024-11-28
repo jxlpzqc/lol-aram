@@ -193,11 +193,10 @@ export function randomChampion(roomID: string, userid: string) {
   if (user.gameData.remainRandom == 0) throw new Error('No more randoms');
 
   // new champion
-  const newChampionIdx =
-    MAX_SEATS +
-    room.roomGameDatas.blueTeamAvailableChampions.length +
-    room.roomGameDatas.redTeamAvailableChampions.length;
   const newChampion = rollChampion(room.users[seatId], room.roomGameDatas.usedChampions);
+  if (newChampion === undefined)
+    throw new Error('Could not roll champion');
+
   room.roomGameDatas.usedChampions.push(newChampion);
 
   const oldChampion = user.gameData.champion;
