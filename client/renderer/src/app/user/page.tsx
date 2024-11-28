@@ -21,7 +21,8 @@ export default function () {
 
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(globalThis?.localStorage?.getItem("volume") ?
+    parseInt(globalThis?.localStorage?.getItem("volume") || "50") : 50);
 
   const getInfo = async () => {
     setStatus(0);
@@ -42,9 +43,10 @@ export default function () {
 
   const regist = () => {
     try {
+      const id = globalThis?.localStorage?.getItem("id") || v4();
       sessionService.regist({
         server: server,
-        sessionID: globalThis?.localStorage?.getItem("id") || v4(),
+        sessionID: id,
         realName,
         summonerName: gameID,
         summonerId: summonerId.current || ""
@@ -52,8 +54,10 @@ export default function () {
 
       soundServiceSetVolume(volume);
 
+      globalThis?.localStorage?.setItem("id", id);
       globalThis?.localStorage?.setItem("realName", realName);
       globalThis?.localStorage?.setItem("gameID", gameID);
+      globalThis?.localStorage?.setItem("volume", volume.toString());
       router.replace(`/`);
     } catch (e) {
       if (e instanceof Error)
