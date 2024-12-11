@@ -2,11 +2,14 @@
 import {
     createNewGame, getOwnedChampions,
     isLeagueRunning, joinGame, startGame,
-    selectChampion, getSummonerInfo
+    selectChampion, getSummonerInfo,
+    startWebSocket
 } from './league';
 import { ipcMain } from 'electron';
 
-export function registLeagueService() {
+export function registLeagueService(mainWindow: Electron.BrowserWindow) {
+    console.log("Regist league service")
+
     ipcMain.handle('league:isLeagueRunning', async () => {
         return await isLeagueRunning();
     });
@@ -28,4 +31,8 @@ export function registLeagueService() {
     ipcMain.handle('league:getSummonerInfo', async () => {
         return await getSummonerInfo();
     });
+    ipcMain.handle('league:startWebSocket', async () => {
+        return await startWebSocket(mainWindow);
+    });
 }
+

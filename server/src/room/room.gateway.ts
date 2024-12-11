@@ -27,7 +27,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private socketToUserInfo(client: Socket): rooms.UserInfo {
     let { id, name, gameID, champions: championStr } = client.handshake.query;
-    // console.log(client.handshake.query);
+    console.log(client.handshake.query);
     if (Array.isArray(id)) id = id[0];
     if (Array.isArray(name)) name = name[0];
     if (Array.isArray(gameID)) gameID = gameID[0];
@@ -448,6 +448,83 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     ck();
+
+    let intervalId;
+
+    this.emitToRoom(roomInfo, "executeProgress", {
+      id : progressID,
+      message: "正在等待游戏结果",
+      status: 0
+    });
+
+    const gameEndData = await new Promise<any>((resolve, reject) => {
+      const onEndofGame = (d:any) => {
+        offAll();
+        clearInterval(intervalId);
+        resolve(d);
+      }
+
+      const offAll = () => {
+        for (const user of roomInfo.users.filter(u=> !!u)) {
+          user.socket.off("end-of-game", onEndofGame);
+        }
+      }
+
+      intervalId = setInterval(()=>{
+        try {
+          ck();
+        } catch(e) {
+          reject(e);
+        }
+      }, 1000);
+
+      for (const user of roomInfo.users.filter((u) => !!u)) {
+        user.socket.on('end-of-game', onEndofGame);
+      }
+    });
+
+    this.emitToRoom(roomInfo, "executeProgress", {
+      id : progressID,
+      message: "游戏结果已经生成",
+      status: 1,
+    });
+
+    const handleEndOfGameData = async (data) => {
+      // save data to game
+      await this.db.game.create({
+        data: {
+          gameId: data.gameId,
+          statusBlock: data.toString()
+        }
+      })
+
+      // console.log(data);
+      for(const team of data.teams) {
+        for(const player of team.players) {
+          const smid = player.summonerId
+          const delta = team.isWinningTeam ? 20 : -20;
+            // update increase with
+            let score = await this.getPlayerRankScore(smid)
+            this.db.user.update({
+              where: {
+                summonerId: smid
+              },
+              data: {
+                rankScore: score + delta
+              }
+            })
+
+          console.log(player.summonerId, team.isWinningTeam)
+        }
+      }
+
+      for(const user of roomInfo.users) {
+        user.user.rankScore = await this.getPlayerRankScore(user.user);
+      }
+      this.notifyRoom(roomInfo);
+    }
+    await handleEndOfGameData(gameEndData);
+
 
     this.notifyRoom(roomInfo, 'finish');
     roomInfo.status = 'waiting';

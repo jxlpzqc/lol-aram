@@ -90,6 +90,12 @@ export async function executeGame(
 ): Promise<RoomDTO> {
   let processes: ProgressDTO[] = [];
 
+  function emitResult(_event: any, data: any) {
+    socket.emit("end-of-game", data);
+  }
+  
+  leagueHandler.addOnEndGameListener(emitResult);
+
   const handleProgress = (data: ProgressDTO) => {
     let idx = processes.findIndex((p) => p.id === data.id);
     if (idx !== -1) {
@@ -158,6 +164,7 @@ export async function executeGame(
     socket.once("finish", resolve);
   });
 
+  leagueHandler.removeOnEndGameListener(emitResult);
   socket.off("executeProgress", handleProgress);
   socket.off("createRoom", createRoomHandler);
   socket.off("joinRoom", joinRoomHandler);

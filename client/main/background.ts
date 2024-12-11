@@ -28,6 +28,8 @@ let mainWindow: BrowserWindow | undefined;
     },
   })
 
+  registLeagueService(mainWindow);
+
   if (isProd) {
     await mainWindow.loadURL('app://./')
   } else {
@@ -37,6 +39,7 @@ let mainWindow: BrowserWindow | undefined;
   }
 
   checkUpdate(app, mainWindow)
+
 })()
 
 app.on('window-all-closed', () => {
@@ -47,5 +50,4 @@ ipcMain.on('message', async (event, arg) => {
   event.reply('message', `${arg} World!`)
 })
 
-registLeagueService();
 registAutoUpdateService();

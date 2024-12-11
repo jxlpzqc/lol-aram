@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { authenticate, createHttp1Request } from 'league-connect';
+import { authenticate, createHttp1Request, createWebSocketConnection, LeagueWebSocket } from 'league-connect';
 import championList from '@renderer/public/assets/champions.json';
+import { ipcMain } from 'electron';
 
 export async function isLeagueRunning() {
     try {
@@ -12,6 +13,41 @@ export async function isLeagueRunning() {
         return false;
     }
 }
+
+let _websocket: LeagueWebSocket | null = null;
+
+export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
+    _websocket = await createWebSocketConnection();
+    _websocket.subscribe("/lol-end-of-game/v1/eog-stats-block", (data, event) => {
+        console.log("endOfGame", data);
+        mainWindow.webContents.send('league:endOfGame', data);
+    });
+}
+
+// async function addOnWebSocketReadyListener(params:type) {
+    
+// }
+
+// async function removeOnWebSocketReadyListener(params:type) {
+    
+// }
+
+// async function addOnWebSocketDisconnectListener(params:type) {
+    
+// }
+
+// async function removeOnWebSocketDisconnectListener(params:type) {
+    
+// }
+
+// async function addOnEndOfGameListener(listener: (data: any, event: any) => void) {
+//     _websocket?.subscribe("/lol-end-of-game/v1/eog-stats-block", listener);
+// }
+
+// async function removeOnEndOfGameListener(listener: (data: any, event: any) => void) {
+//     _websocket?.unsubscribe("/lol-end-of-game/v1/eog-stats-block", listener);
+// }
+
 
 async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue' | 'red') {
     const currentSummonerId = summonerID;

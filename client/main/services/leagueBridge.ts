@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, IpcRendererEvent } from 'electron'
 
 const _leagueBridge = {
     isLeagueRunning: async () => {
@@ -26,6 +26,15 @@ const _leagueBridge = {
             id: string;
             name: string;
         };
+    },
+    startWebSocket: async () => {
+        await ipcRenderer.invoke('league:startWebSocket');
+    },
+    addOnEndGameListener: (listener: (_event:IpcRendererEvent, data:any) => void) => {
+        ipcRenderer.on('league:endOfGame', listener);
+    },
+    removeOnEndGameListener: (listener: (_event:IpcRendererEvent, data:any) => void) => {
+        ipcRenderer.off('league:endOfGame', listener);
     }
 };
 

@@ -19,12 +19,14 @@ export default function () {
   const [gameID, setGameID] = useState(globalThis?.localStorage?.getItem("gameID") || "");
   const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || "lol.fancybag.cn:22001");
 
+  // 0 - loading, 1 - success, 2 - fail
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
   const [volume, setVolume] = useState(globalThis?.localStorage?.getItem("volume") ?
     parseInt(globalThis?.localStorage?.getItem("volume") || "50") : 50);
 
   const getInfo = async () => {
+    await league.startWebSocket();
     setStatus(0);
     try {
       const info = await league.getSummonerInfo();
