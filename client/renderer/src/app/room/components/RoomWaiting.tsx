@@ -15,7 +15,8 @@ function SeatCard({ seat, onJoin, onKick }: { seat?: UserDTO | null, onJoin: () 
   return <div className="h-16 px-4 flex border-b-solid border-b-slate-600 border-b justify-between items-center">
     {!seat ? <div>（空）</div> :
       <div>
-        <div>{seat.gameID}</div>
+        
+        <div>{seat.gameID} <span className="inline-block mx-2 px-2 text-sm rounded-md border border-[#f5d185] text-[#f5d185]">{seat.rankScore} </span></div>
         <div className="text-sm">{seat.name}</div>
       </div>}
 

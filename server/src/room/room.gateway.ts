@@ -13,6 +13,7 @@ import { Server, Socket } from 'socket.io';
 import * as rooms from '../rooms';
 import { Logger } from '@nestjs/common';
 import { JoinRoomRequest, CreateRoomRequest, ProgressDTO } from '@shared/contract';
+import { PrismaService } from '../prisma.service';
 
 @WebSocketGateway({
   cors: {
@@ -22,6 +23,7 @@ import { JoinRoomRequest, CreateRoomRequest, ProgressDTO } from '@shared/contrac
 })
 export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(RoomGateway.name);
+  constructor(private readonly db: PrismaService) {}
 
   private socketToUserInfo(client: Socket): rooms.UserInfo {
     let { id, name, gameID, champions: championStr } = client.handshake.query;
@@ -45,17 +47,37 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return rooms.getRoom(roomID);
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
+  private async getPlayerRankScore(info: rooms.UserInfo): Promise<number> {
+    const user = await this.db.user.findUnique({
+      where: {
+        summonerId: info.id
+      }
+    });
+
+    if(!user) throw new Error('User not found');
+
+    return user.rankScore;
+  }
+
+  async handleConnection(client: Socket, ...args: any[]) {
     const userInfo = this.socketToUserInfo(client);
 
-    if (rooms.getRoomByUser(userInfo.id)) {
-      rooms.quitRoom(rooms.getRoomByUser(userInfo.id)!.id, userInfo.id);
-    }
-
-    if (userInfo.ownedChampions.length < 10) {
-      this.logger.error(`User ${userInfo.id} has less than 10 champions, could not join room`);
-      client.disconnect();
-    }
+    // if user not exist, create user else update user
+    await this.db.user.upsert({
+      where: {
+        summonerId: userInfo.id
+      },
+      update: {
+        name: userInfo.gameID,
+        nickname: userInfo.name,
+      },
+      create: {
+        summonerId: userInfo.id,
+        name: userInfo.gameID,
+        nickname: userInfo.name,
+      }
+    });
+    userInfo.rankScore = await this.getPlayerRankScore(userInfo);
 
     let { roomID, roomName, waitingTime } = client.handshake.query;
 
