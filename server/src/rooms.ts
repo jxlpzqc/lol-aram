@@ -128,6 +128,10 @@ export function joinRoom(
 export function quitRoom(roomID: string, userid: string) {
   const room = getRoom(roomID);
   if (room) {
+    if (room.users.findIndex((u) => u?.user.id === userid) === -1) {
+      throw new Error('User not in room');
+    }
+
     if (room.status !== 'waiting') {
       // throw new Error('Cannot quit room when game is in progress');
       room.needStop = true;
