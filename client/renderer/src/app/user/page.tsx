@@ -44,14 +44,15 @@ export default function () {
   }, []);
 
   const regist = () => {
+    if (!summonerId.current) return;
     try {
-      const id = globalThis?.localStorage?.getItem("id") || v4();
+      const id = summonerId.current.toString();
       sessionService.regist({
         server: server,
         sessionID: id,
         realName,
         summonerName: gameID,
-        summonerId: summonerId.current || ""
+        summonerId: summonerId.current
       });
 
       soundServiceSetVolume(volume);
