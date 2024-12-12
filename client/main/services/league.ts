@@ -103,7 +103,7 @@ export async function createNewGame(gameName: string, password: string, summoner
                         "reroll": true,
                     },
                     "spectatorDelayEnabled": true,
-                    "spectatorPolicy": "NotAllowed",
+                    "spectatorPolicy": "LobbyAllowed",
                     "teamSize": 5
                 },
                 "lobbyName": gameName,
