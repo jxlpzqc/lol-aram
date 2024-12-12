@@ -341,6 +341,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
           id: progressID, message: '由于玩家退出，游戏启动进程已停止', status: 2
         });
         this.notifyRoom(roomInfo, 'finish');
+        roomInfo.status = 'waiting';
       });
     }
 
