@@ -338,7 +338,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const ck = () => {
       this.checkNeedStop(roomInfo, () => {
         this.emitToRoom(roomInfo, 'executeProgress', {
-          id: -100, message: '由于玩家退出，游戏启动进程已停止', status: 2
+          id: progressID, message: '由于玩家退出，游戏启动进程已停止', status: 2
         });
         this.notifyRoom(roomInfo, 'finish');
       });
@@ -493,8 +493,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // save data to game
       await this.db.game.create({
         data: {
-          gameId: data.gameId,
-          statusBlock: data.toString()
+          gameId: data.gameId.toString(),
+          statusBlock: JSON.stringify(data)
         }
       })
 
@@ -503,22 +503,22 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         for(const player of team.players) {
           const smid = player.summonerId
           const delta = team.isWinningTeam ? 20 : -20;
-            // update increase with
-            let score = await this.getPlayerRankScore(smid)
-            this.db.user.update({
-              where: {
-                summonerId: smid
-              },
-              data: {
-                rankScore: score + delta
+          await this.db.user.update({
+            where: {
+              summonerId: smid.toString()
+            },
+            data: {
+              rankScore: {
+                increment: delta
               }
-            })
+            }
+          })
 
           console.log(player.summonerId, team.isWinningTeam)
         }
       }
 
-      for(const user of roomInfo.users) {
+      for(const user of roomInfo.users.filter((u) => !!u)) {
         user.user.rankScore = await this.getPlayerRankScore(user.user);
       }
       this.notifyRoom(roomInfo);
