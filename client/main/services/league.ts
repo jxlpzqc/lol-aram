@@ -17,6 +17,7 @@ export async function isLeagueRunning() {
 let _websocket: LeagueWebSocket | null = null;
 
 export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
+    if (_websocket?.OPEN || _websocket?.CONNECTING) return;
     _websocket = await createWebSocketConnection();
     _websocket.subscribe("/lol-end-of-game/v1/eog-stats-block", (data, event) => {
         console.log("endOfGame", data);
