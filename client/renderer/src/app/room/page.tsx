@@ -92,7 +92,6 @@ export default function Room() {
 
         setAvailableChampions(data.avaliableChampions);
         const self = data.users?.find((u) => u?.id === sessionService.sessionID);
-        console.log("users", data.users, self);
         if (self) {
           setDiceNumber(self.gameData?.remainRandom || 0);
         }
@@ -143,6 +142,8 @@ export default function Room() {
         }} onStartGame={async () => {
           if (socket.current)
             await startGame(socket.current);
+        }} onAutoArrange={() => {
+          socket.current?.emit('autoarrange');
         }} onQuit={() => {
           router.replace('/');
         }} />
@@ -165,7 +166,10 @@ export default function Room() {
         {status !== 1 && <div className=' bg-[#000000aa] fixed w-full h-full left-0 top-0 flex justify-center items-center'>
           <div className='w-1/2 h-2/3 bg-[#010a13] border-[#463714] border-2 border-solid'>
             <GameExecutor finished={status === 3} progress={progress} seats={seats}
-              replay={onReplay} />
+              onReplay={onReplay}
+              onEnd={() => {
+                socket.current?.emit('end');
+              }} />
           </div>
         </div>}
       </div>

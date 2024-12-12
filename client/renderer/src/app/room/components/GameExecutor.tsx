@@ -8,7 +8,8 @@ type Props = {
   seats?: (UserDTO | null)[],
   progress?: ProgressDTO[]
   finished?: boolean,
-  replay?: () => void
+  onReplay?: () => void
+  onEnd?: () => void
 }
 
 function ProgressItem({ progress }: { progress: ProgressDTO }) {
@@ -32,7 +33,7 @@ function ProgressItem({ progress }: { progress: ProgressDTO }) {
 
 
 export default function ({
-  seats, progress, finished, replay
+  seats, progress, finished, onReplay, onEnd
 }: Props) {
 
   const router = useRouter();
@@ -64,10 +65,10 @@ export default function ({
 
     <div className="flex justify-center">
       {
-        finished && <LeagueButtonGroup text="再来一局" onConfirm={replay}
+        finished ? <LeagueButtonGroup text="再来一局" onConfirm={onReplay}
           onCancel={() => {
             router.back();
-          }} />
+          }} /> : <button className="league-btn" onClick={onEnd}>取消启动进程</button>
       }
     </div>
   </div>
