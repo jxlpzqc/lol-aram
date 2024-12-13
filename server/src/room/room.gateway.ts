@@ -1,19 +1,17 @@
 import {
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsResponse,
 } from '@nestjs/websockets';
-import { from, Observable } from 'rxjs';
-import { first, map } from 'rxjs/operators';
 import { Server, Socket } from 'socket.io';
 import * as rooms from '../rooms';
 import { Logger } from '@nestjs/common';
 import { JoinRoomRequest, CreateRoomRequest, ProgressDTO } from '@shared/contract';
 import { PrismaService } from '../prisma.service';
+
+const DEFAULT_RANK_SCORE = 1200;
 
 @WebSocketGateway({
   cors: {
@@ -27,7 +25,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private socketToUserInfo(client: Socket): rooms.UserInfo {
     let { id, name, gameID, champions: championStr } = client.handshake.query;
-    console.log(client.handshake.query);
     if (Array.isArray(id)) id = id[0];
     if (Array.isArray(name)) name = name[0];
     if (Array.isArray(gameID)) gameID = gameID[0];
@@ -75,6 +72,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         summonerId: userInfo.id,
         name: userInfo.gameID,
         nickname: userInfo.name,
+        rankScore: DEFAULT_RANK_SCORE
       }
     });
     userInfo.rankScore = await this.getPlayerRankScore(userInfo);
@@ -511,25 +509,24 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
           for (const player of team.players) {
             const smid: number = player.summonerId;
             const delta = team.isWinningTeam ? 20 : -20;
-            if (!!await this.db.user.findFirst({
-              where: { summonerId: smid.toString() },
-              select: {
-                summonerId: true
-              }
-            }))
-
-              await this.db.user.update({
-                where: {
-                  summonerId: smid.toString()
-                },
-                data: {
-                  rankScore: {
-                    increment: delta
-                  }
+            await this.db.user.upsert({
+              where: {
+                summonerId: smid.toString()
+              },
+              create: {
+                summonerId: smid.toString(),
+                name: player.summonerName || "N/A",
+                nickname: "",
+                rankScore: DEFAULT_RANK_SCORE + delta
+              },
+              update: {
+                rankScore: {
+                  increment: delta
                 }
-              })
+              }
+            })
 
-            console.log(player.summonerId, team.isWinningTeam)
+            this.logger.log(`Update user ${player.summonerId} (${player.summonerName}) with wining: ${team.isWinningTeam}`)
           }
         }
 
