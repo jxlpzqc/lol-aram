@@ -347,8 +347,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.emitToRoom(roomInfo, 'executeProgress', {
           id: progressID, message: '由于玩家退出，游戏启动进程已停止', status: 2
         });
-        this.notifyRoom(roomInfo, 'finish');
-        roomInfo.status = 'waiting';
       });
     }
 
@@ -358,185 +356,195 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     let progressID = 0;
 
     let preparedCount = 0;
-    await new Promise<void>((resolve, reject) => {
-      const ausers = roomInfo.users.filter((u) => u !== null);
-      for (const user of ausers) {
-        if (user !== null) {
-          user.socket.once('prepareExecute', () => {
-            preparedCount++;
-            if (preparedCount === ausers.length) {
-              this.emitToRoom(roomInfo, 'executeProgress', {
-                id: progressID,
-                message: '所有玩家准备执行完成',
-                status: 1
-              });
-              resolve();
-            } else {
-              this.emitToRoom(roomInfo, 'executeProgress', {
-                id: progressID,
-                message: '等待所有玩家准备执行，当前进度 ' + preparedCount + ' / ' + ausers.length,
-                status: 0
-              });
-            }
-          });
-          setTimeout(() => {
-            if (preparedCount !== ausers.length) {
-              this.emitToRoom(roomInfo, 'executeProgress', {
-                id: progressID,
-                message: '在超时限制内未收到所有玩家的准备就绪',
-                status: 2
-              });
-              reject(new Error('等待所有玩家准备执行超时'));
-            }
-          }, 20000);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const ausers = roomInfo.users.filter((u) => u !== null);
+        for (const user of ausers) {
+          if (user !== null) {
+            user.socket.once('prepareExecute', () => {
+              preparedCount++;
+              if (preparedCount === ausers.length) {
+                this.emitToRoom(roomInfo, 'executeProgress', {
+                  id: progressID,
+                  message: '所有玩家准备执行完成',
+                  status: 1
+                });
+                resolve();
+              } else {
+                this.emitToRoom(roomInfo, 'executeProgress', {
+                  id: progressID,
+                  message: '等待所有玩家准备执行，当前进度 ' + preparedCount + ' / ' + ausers.length,
+                  status: 0
+                });
+              }
+            });
+            setTimeout(() => {
+              if (preparedCount !== ausers.length) {
+                this.emitToRoom(roomInfo, 'executeProgress', {
+                  id: progressID,
+                  message: '在超时限制内未收到所有玩家的准备就绪',
+                  status: 2
+                });
+                reject(new Error('等待所有玩家准备执行超时'));
+              }
+            }, 20000);
+          }
         }
+      });
+      ++progressID;
+
+      // First player create room
+      const firstPlayer = roomInfo.users.find((u) => u !== null);
+
+
+      const leagueRoomResult = (await this.emitEventAndUpdateProgressWithAck<JoinRoomRequest>([firstPlayer?.socket],
+        roomInfo,
+        'createRoom',
+        { team: rooms.getUserGroup(roomInfo, firstPlayer.user.id) === 0 ? 'blue' : 'red' } as CreateRoomRequest,
+        progressID++,
+        `${firstPlayer?.user.gameID} 创建房间`))[0];
+
+      ck();
+
+      this.emitToRoom(roomInfo, 'executeProgress', {
+        id: progressID,
+        message: '请稍等',
+        status: 0
+      });
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      ck();
+
+      for (const otherUser of roomInfo.users.filter((u) => u !== firstPlayer && u !== null)) {
+
+        await this.emitEventAndUpdateProgressWithAck(
+          [otherUser.socket],
+          roomInfo,
+          'joinRoom',
+          {
+            ...leagueRoomResult,
+            team: rooms.getUserGroup(roomInfo, otherUser.user.id) === 0 ? 'blue' : 'red'
+          },
+          progressID++,
+          `${otherUser.user.gameID} 加入房间`
+        );
+
+        ck();
       }
-    });
-    ++progressID;
-
-    // First player create room
-    const firstPlayer = roomInfo.users.find((u) => u !== null);
-
-
-    const leagueRoomResult = (await this.emitEventAndUpdateProgressWithAck<JoinRoomRequest>([firstPlayer?.socket],
-      roomInfo,
-      'createRoom',
-      { team: rooms.getUserGroup(roomInfo, firstPlayer.user.id) === 0 ? 'blue' : 'red' } as CreateRoomRequest,
-      progressID++,
-      `${firstPlayer?.user.gameID} 创建房间`))[0];
-
-    ck();
-
-    this.emitToRoom(roomInfo, 'executeProgress', {
-      id: progressID,
-      message: '请稍等',
-      status: 0
-    });
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    ck();
-
-    for (const otherUser of roomInfo.users.filter((u) => u !== firstPlayer && u !== null)) {
 
       await this.emitEventAndUpdateProgressWithAck(
-        [otherUser.socket],
+        [firstPlayer?.socket],
         roomInfo,
-        'joinRoom',
-        {
-          ...leagueRoomResult,
-          team: rooms.getUserGroup(roomInfo, otherUser.user.id) === 0 ? 'blue' : 'red'
-        },
+        'startGame',
+        {},
         progressID++,
-        `${otherUser.user.gameID} 加入房间`
+        `房主开始游戏`
       );
 
       ck();
-    }
 
-    await this.emitEventAndUpdateProgressWithAck(
-      [firstPlayer?.socket],
-      roomInfo,
-      'startGame',
-      {},
-      progressID++,
-      `房主开始游戏`
-    );
+      await this.emitEventAndUpdateProgressWithAck(
+        roomInfo.users.map((u) => u?.socket),
+        roomInfo,
+        'pick',
+        {},
+        progressID++,
+        `等待所有玩家选择英雄`,
+        "选择英雄失败",
+        "所有玩家选择英雄完成",
+        (n, t) => `等待所有玩家选择英雄，当前进度 ${n} / ${t}.`,
+      );
 
-    ck();
+      ck();
 
-    await this.emitEventAndUpdateProgressWithAck(
-      roomInfo.users.map((u) => u?.socket),
-      roomInfo,
-      'pick',
-      {},
-      progressID++,
-      `等待所有玩家选择英雄`,
-      "选择英雄失败",
-      "所有玩家选择英雄完成",
-      (n, t) => `等待所有玩家选择英雄，当前进度 ${n} / ${t}.`,
-    );
+      let intervalId;
 
-    ck();
+      this.emitToRoom(roomInfo, "executeProgress", {
+        id: progressID,
+        message: "正在等待游戏结果",
+        status: 0
+      });
 
-    let intervalId;
-
-    this.emitToRoom(roomInfo, "executeProgress", {
-      id : progressID,
-      message: "正在等待游戏结果",
-      status: 0
-    });
-
-    const gameEndData = await new Promise<any>((resolve, reject) => {
-      const onEndofGame = (d:any) => {
-        offAll();
-        clearInterval(intervalId);
-        resolve(d);
-      }
-
-      const offAll = () => {
-        for (const user of roomInfo.users.filter(u=> !!u)) {
-          user.socket.off("end-of-game", onEndofGame);
+      const gameEndData = await new Promise<any>((resolve, reject) => {
+        const onEndofGame = (d: any) => {
+          offAll();
+          clearInterval(intervalId);
+          resolve(d);
         }
-      }
 
-      intervalId = setInterval(()=>{
-        try {
-          ck();
-        } catch(e) {
-          reject(e);
+        const offAll = () => {
+          for (const user of roomInfo.users.filter(u => !!u)) {
+            user.socket.off("end-of-game", onEndofGame);
+          }
         }
-      }, 1000);
 
-      for (const user of roomInfo.users.filter((u) => !!u)) {
-        user.socket.on('end-of-game', onEndofGame);
-      }
-    });
+        intervalId = setInterval(() => {
+          try {
+            ck();
+          } catch (e) {
+            reject(e);
+          }
+        }, 1000);
 
-    this.emitToRoom(roomInfo, "executeProgress", {
-      id : progressID,
-      message: "游戏结果已经生成",
-      status: 1,
-    });
-
-    const handleEndOfGameData = async (data) => {
-      // save data to game
-      await this.db.game.create({
-        data: {
-          gameId: data.gameId.toString(),
-          statusBlock: JSON.stringify(data)
+        for (const user of roomInfo.users.filter((u) => !!u)) {
+          user.socket.on('end-of-game', onEndofGame);
         }
-      })
+      });
 
-      // console.log(data);
-      for(const team of data.teams) {
-        for(const player of team.players) {
-          const smid = player.summonerId
-          const delta = team.isWinningTeam ? 20 : -20;
-          await this.db.user.update({
-            where: {
-              summonerId: smid.toString()
-            },
-            data: {
-              rankScore: {
-                increment: delta
+      this.emitToRoom(roomInfo, "executeProgress", {
+        id: progressID,
+        message: "游戏结果已经生成",
+        status: 1,
+      });
+
+      const handleEndOfGameData = async (data) => {
+        // save data to game
+        await this.db.game.create({
+          data: {
+            gameId: data.gameId.toString(),
+            statusBlock: JSON.stringify(data)
+          }
+        })
+
+        // console.log(data);
+        for (const team of data.teams) {
+          for (const player of team.players) {
+            const smid: number = player.summonerId;
+            const delta = team.isWinningTeam ? 20 : -20;
+            if (!!await this.db.user.findFirst({
+              where: { summonerId: smid.toString() },
+              select: {
+                summonerId: true
               }
-            }
-          })
+            }))
 
-          console.log(player.summonerId, team.isWinningTeam)
+              await this.db.user.update({
+                where: {
+                  summonerId: smid.toString()
+                },
+                data: {
+                  rankScore: {
+                    increment: delta
+                  }
+                }
+              })
+
+            console.log(player.summonerId, team.isWinningTeam)
+          }
         }
-      }
 
-      for(const user of roomInfo.users.filter((u) => !!u)) {
-        user.user.rankScore = await this.getPlayerRankScore(user.user);
+        for (const user of roomInfo.users.filter((u) => !!u)) {
+          user.user.rankScore = await this.getPlayerRankScore(user.user);
+        }
+        this.notifyRoom(roomInfo);
       }
+      await handleEndOfGameData(gameEndData);
+
+    } finally {
+      this.notifyRoom(roomInfo, 'finish');
+      roomInfo.status = 'waiting';
       this.notifyRoom(roomInfo);
     }
-    await handleEndOfGameData(gameEndData);
-
-
-    this.notifyRoom(roomInfo, 'finish');
-    roomInfo.status = 'waiting';
-    this.notifyRoom(roomInfo);
   }
 
   @SubscribeMessage('random')
