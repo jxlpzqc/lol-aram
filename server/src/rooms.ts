@@ -254,6 +254,62 @@ export function getSeatIndexGroup(idx: number): number {
   return idx < (MAX_SEATS / 2) ? 0 : 1;
 }
 
+export function autoArrangeRoom(room: RoomInfo) {
+  if (room.status !== 'waiting') {
+    throw new Error("Auto arrange must be executed in a waiting room.")
+  }
+
+  // divide not null seats into two groups, make the difference of rank score as small as possible
+  const users = room.users.filter((u) => u !== null);
+
+  const nextCombination = (arr: number[], n: number, m: number) => {
+    let i = m - 1;
+    while (i >= 0 && arr[i] === n - m + i) {
+      i--;
+    }
+    if (i < 0) return false;
+    arr[i]++;
+    for (let j = i + 1; j < m; j++) {
+      arr[j] = arr[j - 1] + 1;
+    }
+    return true;
+  }
+
+  const combination = new Array(users.length / 2).fill(0).map((_, i) => i);
+  let result: number[];
+
+  const getDifference = () => {
+    const blueTeam = combination.reduce((x, c) => (x + (users[c].user.rankScore || 0)), 0);
+    const redTeam = users.reduce((x, c, i) => (combination.includes(i) ? x : x + (c.user.rankScore || 0)), 0);
+    return Math.abs(blueTeam - redTeam);
+  }
+
+  let minDifference = getDifference();
+  result = [...combination];
+
+  while (nextCombination(combination, users.length, users.length / 2)) {
+    if (getDifference() < minDifference) {
+      minDifference = getDifference();
+      result = [...combination];
+    }
+  }
+
+  // redTeam result
+  const blueTeamIdxResult = result;
+  const redTeamIdxResult = new Array(users.length).fill(0).map((_, i) => i).filter((x) => !blueTeamIdxResult.includes(x));
+
+  const teamsIdx = [blueTeamIdxResult, redTeamIdxResult];
+
+  // rearrage
+  for (let team = 0; team < 2; team++) {
+    const teamIdxResult = teamsIdx[team];
+    for (let i = 0; i < MAX_SEATS / 2; i++) {
+      if (i < teamIdxResult.length) room.users[team * 5 + i] = users[teamIdxResult[i]];
+      else room.users[team * 5 + i] = null;
+    }
+  }
+}
+
 export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
 
   const currentUserGroup = getUserGroup(room, userid);

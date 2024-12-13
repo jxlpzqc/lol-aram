@@ -23,7 +23,7 @@ import { PrismaService } from '../prisma.service';
 })
 export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(RoomGateway.name);
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   private socketToUserInfo(client: Socket): rooms.UserInfo {
     let { id, name, gameID, champions: championStr } = client.handshake.query;
@@ -54,7 +54,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     });
 
-    if(!user) throw new Error('User not found');
+    if (!user) throw new Error('User not found');
 
     return user.rankScore;
   }
@@ -160,6 +160,13 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new Error('Cannot change seat when game is in progress');
     }
     rooms.changeSeat(roomInfo, userInfo.id, data.seat);
+    this.notifyRoom(roomInfo);
+  }
+
+  @SubscribeMessage('autoarrange')
+  async autoarrange(client: Socket) {
+    const roomInfo = this.socketToRoomInfo(client);
+    rooms.autoArrangeRoom(roomInfo);
     this.notifyRoom(roomInfo);
   }
 
