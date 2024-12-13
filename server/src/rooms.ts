@@ -275,7 +275,7 @@ export function autoArrangeRoom(room: RoomInfo) {
     return true;
   }
 
-  const combination = new Array(users.length / 2).fill(0).map((_, i) => i);
+  const combination = new Array(Math.floor(users.length / 2)).fill(0).map((_, i) => i);
   let result: number[];
 
   const getDifference = () => {
@@ -287,7 +287,7 @@ export function autoArrangeRoom(room: RoomInfo) {
   let minDifference = getDifference();
   result = [...combination];
 
-  while (nextCombination(combination, users.length, users.length / 2)) {
+  while (nextCombination(combination, users.length, Math.floor(users.length / 2))) {
     if (getDifference() < minDifference) {
       minDifference = getDifference();
       result = [...combination];
