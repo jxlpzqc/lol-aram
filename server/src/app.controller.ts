@@ -46,7 +46,7 @@ export class AppController {
   async getGames(
     @Param("userid") userid: string,
     @Query("page", new DefaultValuePipe(0), ParseIntPipe) page: number,
-    @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number): Promise<UserGameSummaryDTO[]> {
+    @Query("pageSize", new DefaultValuePipe(1000), ParseIntPipe) pageSize: number): Promise<UserGameSummaryDTO[]> {
 
     const result = await this.db.user.findUnique({
       where: {
