@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { CreateRoomRequest, JoinRoomRequest, ProgressDTO, RoomDTO, RoomInListDTO } from '@shared/contract';
+import { CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
 import leagueHandler from "./league";
 import { v4 } from "uuid";
 import sessionService from "./session";
@@ -9,6 +9,24 @@ export async function getAllRooms(): Promise<RoomInListDTO[]> {
   const ret = await fetch("http://" + session.server + "/rooms")
   const data = await ret.json();
   return data as RoomInListDTO[];
+}
+
+export async function getRankings(): Promise<RankingDTO[]> {
+  const ret = await fetch("http://" + session.server + "/rankings")
+  const data = await ret.json();
+  return data as RankingDTO[];
+}
+
+export async function getUserGames(userid: string): Promise<UserGameSummaryDTO[]> {
+  const ret = await fetch("http://" + session.server + `/users/${userid}/games`)
+  const data = await ret.json();
+  return data as UserGameSummaryDTO[];
+}
+
+export async function getGameEog(gameid: string): Promise<LeagueGameEogData> {
+  const ret = await fetch("http://" + session.server + `/games/${gameid}`)
+  const data = await ret.json();
+  return data as LeagueGameEogData;
 }
 
 export type RoomSocketOpts = {
@@ -91,9 +109,10 @@ export async function executeGame(
   let processes: ProgressDTO[] = [];
 
   function emitResult(_event: any, data: any) {
+    console.log("end-of-game", data);
     socket.emit("end-of-game", data);
   }
-  
+
   leagueHandler.addOnEndGameListener(emitResult);
 
   const handleProgress = (data: ProgressDTO) => {
