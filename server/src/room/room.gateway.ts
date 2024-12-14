@@ -269,9 +269,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               this.emitToRoom(roomInfo, 'executeProgress', p);
             }
 
+            cleanupCallbacks();
+
             if (ready === sockets.length) {
-              timeoutHandle && clearTimeout(timeoutHandle);
-              cleanupCallbacks();
               resolve(ret);
             }
           };
