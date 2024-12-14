@@ -30,12 +30,18 @@ const _leagueBridge = {
     startWebSocket: async () => {
         await ipcRenderer.invoke('league:startWebSocket');
     },
-    addOnEndGameListener: (listener: (_event:IpcRendererEvent, data:any) => void) => {
+    addOnEndGameListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
         ipcRenderer.on('league:endOfGame', listener);
     },
-    removeOnEndGameListener: (listener: (_event:IpcRendererEvent, data:any) => void) => {
+    removeOnEndGameListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
         ipcRenderer.off('league:endOfGame', listener);
-    }
+    },
+    addWebSocketClosedListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
+        ipcRenderer.on('league:webSocketClosed', listener);
+    },
+    removeWebSocketClosedListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
+        ipcRenderer.off('league:webSocketClosed', listener);
+    },
 };
 
 export default _leagueBridge;

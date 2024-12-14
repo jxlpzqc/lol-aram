@@ -19,36 +19,26 @@ let _websocket: LeagueWebSocket | null = null;
 export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
     if (_websocket?.OPEN || _websocket?.CONNECTING) return;
     _websocket = await createWebSocketConnection();
+
+    const reportClose = (e) => {
+        console.error("WebSocket closed");
+        mainWindow.webContents.send('league:webSocketClosed', e);
+    }
+    _websocket.addEventListener('close', reportClose);
+    _websocket.addEventListener('error', reportClose);
+
     _websocket.subscribe("/lol-end-of-game/v1/eog-stats-block", (data, event) => {
         console.log("endOfGame", data);
         mainWindow.webContents.send('league:endOfGame', data);
     });
+
+    if (_websocket.OPEN) return;
+
+    // wait for the connection to be ready
+    await new Promise((resolve) => {
+        _websocket?.addEventListener('open', resolve);
+    });
 }
-
-// async function addOnWebSocketReadyListener(params:type) {
-    
-// }
-
-// async function removeOnWebSocketReadyListener(params:type) {
-    
-// }
-
-// async function addOnWebSocketDisconnectListener(params:type) {
-    
-// }
-
-// async function removeOnWebSocketDisconnectListener(params:type) {
-    
-// }
-
-// async function addOnEndOfGameListener(listener: (data: any, event: any) => void) {
-//     _websocket?.subscribe("/lol-end-of-game/v1/eog-stats-block", listener);
-// }
-
-// async function removeOnEndOfGameListener(listener: (data: any, event: any) => void) {
-//     _websocket?.unsubscribe("/lol-end-of-game/v1/eog-stats-block", listener);
-// }
-
 
 async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue' | 'red') {
     const currentSummonerId = summonerID;
@@ -194,7 +184,7 @@ export async function getOwnedChampions(summonerID: string): Promise<number[]> {
     }
 
     const d = await resp.json();
-    console.log(d);
+    // console.log(d);
     return d.filter(x => x?.freeToPlay || x?.ownership?.owned)
         .map((champion: any) => championList.findIndex(x => x.id == champion.id));
 }
