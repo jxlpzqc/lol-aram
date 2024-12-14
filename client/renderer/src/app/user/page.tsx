@@ -78,7 +78,7 @@ export default function () {
               />
             </td>
             <td className={`${item.isWin ? 'text-blue-400' : 'text-red-400'} font-bold`} >{item.isWin ? '胜利' : '失败'}</td>
-            <td className={`${item.isWin ? 'text-blue-400' : 'text-red-400'}`} >{item.scoreDelta >= 0 && '+'} {item.scoreDelta}</td>
+            <td className={`${item.isWin ? 'text-blue-400' : 'text-red-400'}`} >{item.scoreDelta >= 0 ? '+' : '-'} {Math.abs(item.scoreDelta)}</td>
             <td>
               <GameEogSpellAndItems spells={[item.playerData.spell1Id, item.playerData.spell2Id]} items={item.playerData.items} />
             </td>
