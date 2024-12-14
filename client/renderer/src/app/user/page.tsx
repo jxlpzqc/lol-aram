@@ -6,7 +6,7 @@ import { getUserGames } from "../../services/room";
 import LoadingPage from "../../components/LoadingPage";
 import FailPage from "../../components/FailPage";
 import LeaguePage from "../../components/LeaguePage";
-import { GameEogChampion, GameEogSpellAndItems } from "../game/page";
+import { GameEogChampion, GameEogSpellAndItems } from "../game/GameEog";
 
 export default function () {
   const params = useSearchParams();
