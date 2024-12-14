@@ -512,6 +512,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const handleEndOfGameData = async (data) => {
         // console.log(data);
+        // save data to game
+        await this.db.game.create({
+          data: {
+            gameId: data.gameId.toString(),
+            statusBlock: JSON.stringify(data),
+          }
+        })
+
         for (const team of data.teams) {
           for (const player of team.players) {
             const smid: number = player.summonerId;
@@ -544,23 +552,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
               }
             })
 
+            await this.db.gameUserMapping.create({
+              data: {
+                gameId: data.gameId.toString(),
+                userId: smid.toString(),
+                isWin,
+                scoreDelta: delta
+              }
+            });
+
             this.logger.log(`Game ${data.gameId} finish, update user ${player.summonerId} (${player.summonerName}) with wining: ${team.isWinningTeam}`)
           }
         }
 
-        // save data to game
-        await this.db.game.create({
-          data: {
-            gameId: data.gameId.toString(),
-            statusBlock: JSON.stringify(data),
-            users: {
-              create: data.teams.flatMap(x => x.players.map(p => p.summonerId))
-                .map((id: number) => ({
-                  userId: id.toString()
-                }))
-            }
-          }
-        })
 
         for (const user of roomInfo.users.filter((u) => !!u)) {
           user.user.rankScore = await this.getPlayerRankScore(user.user);

@@ -48,18 +48,27 @@ export class AppController {
     @Query("page", new DefaultValuePipe(0), ParseIntPipe) page: number,
     @Query("pageSize", new DefaultValuePipe(10), ParseIntPipe) pageSize: number): Promise<UserGameSummaryDTO[]> {
 
-    const result = await this.db.game.findMany({
+    const result = await this.db.user.findUnique({
       where: {
-        users: {
-          some: {
-            userId: userid
-          },
-        },
+        summonerId: userid,
       },
-      take: pageSize,
-      skip: page * pageSize,
-    });
-    return result.map((game) => {
+      include: {
+        games: {
+          take: pageSize,
+          skip: page * pageSize,
+          orderBy: {
+            game: {
+              time: "desc"
+            }
+          },
+          include: {
+            game: true
+          }
+        }
+      },
+    })
+    return result.games.map((gameMapping) => {
+      const game = gameMapping.game;
       const id = game.gameId;
       const eogData = JSON.parse(game.statusBlock) as LeagueGameEogData;
       const playerDataWithWin = eogData.teams.flatMap(x => x.players.map(u => ({
@@ -73,6 +82,7 @@ export class AppController {
         gameId: id,
         isWin: playerDataWithWin.win,
         playerData: playerDataWithWin.player,
+        scoreDelta: gameMapping.scoreDelta,
       }
     }).filter((x) => x !== null);
   }

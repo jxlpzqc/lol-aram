@@ -250,4 +250,6 @@ export interface LeagueGameEogTeam {
 export type UserGameSummaryDTO = {
   gameId: string;
   playerData: LeagueGameEogPlayer;
+  isWin: boolean;
+  scoreDelta: number;
 }
