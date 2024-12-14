@@ -6,6 +6,7 @@ const fs = require("fs");
 const fsPromises = fs.promises;
 const { Readable } = require("stream");
 const { finished } = require("stream/promises");
+const { parseArgs } = require("util");
 
 /**
  * @typedef {Object} RawChampionSummaryData
@@ -69,6 +70,59 @@ const { finished } = require("stream/promises");
  * @property {string?} portraitURL
  * @property {string?} skinURL
  * @property {string?} pickSoundURL
+ */
+
+/**
+ * @typedef {Object} RawItemData
+ * @property {number} id
+ * @property {string} name
+ * @property {string} description
+ * @property {boolean} active
+ * @property {boolean} inStore
+ * @property {number[]} from
+ * @property {number[]} to
+ * @property {string[]} categories
+ * @property {number} maxStacks
+ * @property {string} requiredChampion
+ * @property {string} requiredAlly
+ * @property {string} requiredBuffCurrencyName
+ * @property {number} requiredBuffCurrencyCost
+ * @property {number} specialRecipe
+ * @property {boolean} isEnchantment
+ * @property {number} price
+ * @property {number} priceTotal
+ * @property {boolean} displayInItemSets
+ * @property {string} iconPath
+ */
+
+
+/**
+ * @typedef {Object} ResultItem
+ * @property {number} id
+ * @property {string} name
+ * @property {string} description
+ * @property {string} iconURL
+ */
+
+
+/**
+ * @typedef {Object} RawSummonerSpellData
+ * @property {number} id
+ * @property {string} name
+ * @property {string} description
+ * @property {number} summonerLevel
+ * @property {number} cooldown
+ * @property {string[]} gameModes
+ * @property {string} iconPath
+ */
+
+/**
+ * @typedef {Object} ResultSummonerSpell
+ * @property {number} id
+ * @property {string} name
+ * @property {string} description
+ * @property {number} summonerLevel
+ * @property {string} iconURL
  */
 
 const baseUrl = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global"
@@ -150,19 +204,29 @@ async function getChampionResource(id) {
     };
 }
 
-async function main() {
+/**
+ * Update all champions
+ * @returns {Promise<void>}
+ * @param {number} jobs
+ */
+async function updateAllChampions(jobs) {
     /** @type {RawChampionSummaryData[]} */
     const items = await getAllChampions();
 
     /** @type {ResultChampion[]} */
-    const results = [];
+    const results = Array(items.length);
 
     console.log(`Fetching champion data, total ${items.length}...`);
-    let i = 0;
-    for (const item of items) {
-        const result = await getChampionResource(item.id);
-        console.log(`[ ${++i}/${items.length} ]  [${result.id}] ${result.name} (${result.alias}) Fetched.`);
-        results.push(result);
+    let progess = 0;
+    for (let i = 0; i < items.length; i += jobs) {
+        await Promise.all(Array.from({ length: jobs }, async (_, j) => {
+            const idx = i + j;
+            if (idx >= items.length) return;
+            const item = items[idx];
+            const result = await getChampionResource(item.id);
+            console.log(`[ ${++progess}/${items.length} ]  [${result.id}] ${result.name} (${result.alias}) Fetched.`);
+            results[idx] = result;
+        }));
     }
 
     console.log("Writing list to file...");
@@ -172,6 +236,134 @@ async function main() {
     );
 
     console.log("Done.");
+}
+
+/**
+ * Get all items list
+ * @returns {Promise<RawItemData[]>}
+ */
+async function getAllItems() {
+    const url = getUrl("/lol-game-data/assets/v1/items.json", "zh_cn");
+    const res = await fetch(url);
+    const data = await res.json();
+    return data;
+}
+
+/**
+ * Update all items
+ * @param {number} jobs
+ * @returns {Promise<void>}
+ */
+async function updateAllItems(jobs) {
+    /** @type {RawItemData[]} */
+    const items = await getAllItems();
+
+    /** @type {ResultItem[]} */
+    const results = Array(items.length);
+
+    console.log(`Fetching item data, total ${items.length}...`);
+    let progress = 0;
+    for (let i = 0; i < items.length; i += jobs) {
+        await Promise.all(Array.from({ length: jobs }, async (_, j) => {
+            const idx = i + j;
+            if (idx >= items.length) return;
+            const item = items[idx];
+            const result = await downloadAsset(item.iconPath, "default", `${scriptPath}/client/renderer/public/assets/items/${item.id}.png`);
+            results[idx] = {
+                id: item.id,
+                name: item.name,
+                description: item.description,
+                iconURL: result ? `/assets/items/${item.id}.png` : ""
+            };
+            console.log(`[ ${++progress}/${items.length} ]  [${item.id}] ${item.name} Fetched.`);
+        }));
+    }
+
+    console.log("Writing list to file...");
+    await fsPromises.mkdir(`${scriptPath}/client/renderer/public/assets`, { recursive: true });
+    await fsPromises.writeFile(`${scriptPath}/client/renderer/public/assets/items.json`,
+        JSON.stringify(results, null, 2)
+    );
+    console.log("Done.");
+}
+
+async function getAllSummonerSpells() {
+    const url = getUrl("/lol-game-data/assets/v1/summoner-spells.json", "zh_cn");
+    const res = await fetch(url);
+    const data = await res.json();
+    return data;
+}
+
+async function updateAllSummonerSpells() {
+    /** @type {RawSummonerSpellData[]} */
+    const items = await getAllSummonerSpells();
+
+    /** @type {ResultSummonerSpell[]} */
+    const results = Array(items.length);
+
+    console.log(`Fetching summoner spell data, total ${items.length}...`);
+    let progress = 0;
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const result = await downloadAsset(item.iconPath, "default", `${scriptPath}/client/renderer/public/assets/summoner-spells/${item.id}.png`);
+        results[i] = {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            summonerLevel: item.summonerLevel,
+            iconURL: result ? `/assets/summoner-spells/${item.id}.png` : ""
+        };
+        console.log(`[ ${++progress}/${items.length} ]  [${item.id}] ${item.name} Fetched.`);
+    }
+
+    console.log("Writing list to file...");
+    await fsPromises.mkdir(`${scriptPath}/client/renderer/public/assets`, { recursive: true });
+    await fsPromises.writeFile(`${scriptPath}/client/renderer/public/assets/summoner-spells.json`,
+        JSON.stringify(results, null, 2)
+    );
+    console.log("Done.");
+}
+
+async function main() {
+    const args = parseArgs({
+        args: process.argv.slice(2),
+        options: {
+            "no-champions": {
+                type: "boolean",
+                default: false
+            },
+            "no-items": {
+                type: "boolean",
+            },
+            "no-summoner-spells": {
+                type: "boolean",
+            },
+            "jobs": {
+                type: "string",
+                default: "10"
+            }
+        }
+    });
+
+    let jobs = 10;
+    try {
+        jobs = parseInt(args.values["jobs"]);
+    } catch (e) {
+        console.error(e);
+    }
+
+    if (!args.values["no-champions"]) {
+        console.log("Updating champions...");
+        await updateAllChampions(jobs);
+    }
+    if (!args.values["no-items"]) {
+        console.log("Updating items...");
+        await updateAllItems(jobs);
+    }
+    if (!args.values["no-summoner-spells"]) {
+        console.log("Updating summoner spells...");
+        await updateAllSummonerSpells();
+    }
 }
 
 
