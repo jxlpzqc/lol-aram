@@ -88,3 +88,42 @@ body {
   list-style: auto;
   margin-left: 1.2em;
 }
+
+.league-table {
+  @apply table-auto w-full 
+}
+
+.league-table th {
+  @apply text-left py-4 px-2
+}
+.league-table td {
+  @apply py-2 px-2
+}
+
+
+.league-table tbody tr {
+  @apply hover:outline-[#785a28] hover:outline hover:outline-offset-[-2px]
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px; 
+    height: 8px; 
+}
+
+::-webkit-scrollbar-track {
+    background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #9c8556; 
+    border-radius: 6px; 
+}
+
+::-webkit-scrollbar-button {
+    display: none; 
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent; 
+}
