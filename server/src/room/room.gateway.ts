@@ -430,6 +430,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         ck();
       }
 
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       await this.emitEventAndUpdateProgressWithAck(
         [firstPlayer?.socket],
         roomInfo,
