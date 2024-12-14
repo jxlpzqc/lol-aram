@@ -47,11 +47,14 @@ export default function ({ roomName, time, seats, onJoin, onKick, onStartGame, o
   const redPercentage = 100 - bluePercentage;
 
   return <LeaguePage title={roomName} showButton
-    confirmText="开始游戏" onConfirm={onStartGame} onCancel={onQuit} >
-    <div className="w-full max-w-[1200px] mx-auto p-4 flex justify-end items-center gap-4">
-      <div className="italic">当前房间英雄选择时间：{time} 秒</div>
-      <button className="league-btn" onClick={onAutoArrange}>自动排列</button>
-    </div>
+    confirmText="开始游戏" onConfirm={onStartGame} onCancel={onQuit}
+    titleToolButtons={
+      <div className="flex gap-4 items-center">
+        <div className="italic">当前房间英雄选择时间：{time} 秒</div>
+        <button className="league-btn" onClick={onAutoArrange}>自动排列</button>
+      </div>
+    }
+  >
     <div className="w-full max-w-[1200px] mx-auto px-4 py-4">
       <div className="flex h-1">
         <div className="h-full bg-blue-400 transition-all duration-300" style={{ width: `${bluePercentage}%` }}></div>

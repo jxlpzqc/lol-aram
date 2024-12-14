@@ -41,8 +41,12 @@ export default function Home() {
     router.push(`/room/create`);
   }
 
-  const setUser = () => {
-    router.push(`/user`);
+  const gotoRanking = () => {
+    router.push(`/rankings`);
+  }
+
+  const gotoSettings = () => {
+    router.push(`/settings`);
   }
 
   useEffect(() => {
@@ -92,12 +96,14 @@ export default function Home() {
   }
 
   return (
-    <LeaguePage title="房间列表">
-      <div className="flex justify-end">
+    <LeaguePage title="房间列表" titleToolButtons={
+      <div className="flex">
         <button className="league-btn mx-4" onClick={() => { fetchRooms() }}>刷新</button>
-        <button className="league-btn mx-4" onClick={createRoom}>新建房间</button>
-        <button className="league-btn mx-4" onClick={setUser}>配置</button>
+        <button className="league-btn mx-4" onClick={createRoom}>建房</button>
+        <button className="league-btn mx-4" onClick={gotoRanking}>天梯</button>
+        <button className="league-btn mx-4" onClick={gotoSettings}>配置</button>
       </div>
+    }>
       <div className="my-8">
         {body}
       </div>

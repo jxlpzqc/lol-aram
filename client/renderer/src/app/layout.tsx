@@ -4,6 +4,7 @@ import "./globals.css";
 import { Suspense, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import sessionService from "../services/session"
+import leagueHandler from "../services/league";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,8 +27,19 @@ export default function RootLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!sessionService.registed && pathname !== "/update" && pathname !== '/update.html') {
-      router.push("/user");
+    if (!sessionService.registed && pathname !== "/update" && pathname !== '/update.html' && pathname !== "/settings") {
+      router.push("/settings");
+    }
+
+    const onWebSocketClose = (e: any, d: any) => {
+      console.log("onWebSocketClose", e, d);
+      if (pathname !== "/update" && pathname !== '/update.html' && pathname !== "/settings") {
+        router.push("/settings");
+      }
+    }
+    leagueHandler.addWebSocketClosedListener(onWebSocketClose);
+    return () => {
+      leagueHandler.removeWebSocketClosedListener(onWebSocketClose);
     }
   });
 

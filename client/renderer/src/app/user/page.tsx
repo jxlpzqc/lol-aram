@@ -1,112 +1,106 @@
-'use client';
-import { useRouter } from "next/navigation";
-import LeagueButtonGroup from "../../components/LeagueButtonGroup";
-import { useEffect, useRef, useState } from "react";
-import { v4 } from "uuid";
-import league from "../../services/league";
+"use client";
+import { useRouter, useSearchParams } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { UserGameSummaryDTO } from '../../../../../shared/contract';
+import { getUserGames } from "../../services/room";
 import LoadingPage from "../../components/LoadingPage";
 import FailPage from "../../components/FailPage";
-import sessionService from "../../services/session";
-import { setVolume as soundServiceSetVolume } from '../../services/sound';
 import LeaguePage from "../../components/LeaguePage";
+import { GameEogChampion, GameEogSpellAndItems } from "../game/page";
 
 export default function () {
-
+  const params = useSearchParams();
   const router = useRouter();
+  const userid = params.get('userid');
+  const summonerName = params.get('summonerName');
 
-  const summonerId = useRef<string | null>();
-  const [realName, setRealName] = useState(globalThis?.localStorage?.getItem("realName") || "");
-  const [gameID, setGameID] = useState(globalThis?.localStorage?.getItem("gameID") || "");
-  const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || "lol.fancybag.cn:22001");
-
-  // 0 - loading, 1 - success, 2 - fail
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
-  const [volume, setVolume] = useState(globalThis?.localStorage?.getItem("volume") ?
-    parseInt(globalThis?.localStorage?.getItem("volume") || "50") : 50);
+  const [data, setData] = useState<UserGameSummaryDTO[]>([]);
 
-  const getInfo = async () => {
-    await league.startWebSocket();
-    setStatus(0);
+  const getItems = async () => {
+    if (userid === null) {
+      setStatus(2);
+      setFailMsg("参数错误！");
+      return;
+    }
     try {
-      const info = await league.getSummonerInfo();
-      summonerId.current = info.id;
-      setGameID(info.name);
+      const res = await getUserGames(userid);
+      setData(res);
       setStatus(1);
     } catch (e) {
-      setFailMsg("获取召唤师信息失败！请检查客户端是否启动。");
       setStatus(2);
+      setFailMsg(`获取失败！ ${e}`);
     }
+
   }
 
   useEffect(() => {
-    getInfo();
-  }, []);
+    getItems();
 
-  const regist = () => {
-    if (!summonerId.current) return;
-    try {
-      const id = summonerId.current.toString();
-      sessionService.regist({
-        server: server,
-        sessionID: id,
-        realName,
-        summonerName: gameID,
-        summonerId: summonerId.current
-      });
+  }, [userid]);
 
-      soundServiceSetVolume(volume);
 
-      globalThis?.localStorage?.setItem("id", id);
-      globalThis?.localStorage?.setItem("realName", realName);
-      globalThis?.localStorage?.setItem("gameID", gameID);
-      globalThis?.localStorage?.setItem("volume", volume.toString());
-      router.replace(`/`);
-    } catch (e) {
-      if (e instanceof Error)
-        setFailMsg(e.message);
-      setStatus(2);
-    }
-  }
+  let body;
 
   if (status === 0) {
-    return <LoadingPage message="正在获取召唤师信息..." />
+    body = <LoadingPage noPage message="正在获取..." />
   } else if (status === 2) {
-    return <FailPage reason={failMsg} buttonTitle="重试" onButtonClick={getInfo} />
+    body = <FailPage noPage reason={failMsg} buttonTitle="重试" onButtonClick={getItems} />
+  } else if (data?.length === 0) {
+    body = <div className="my-20 flex flex-col justify-center items-center">
+      <img src="/images/poro.svg" className="w-1/4 max-w-[200px]" />
+      <div className="text-xl mt-4">该召唤师暂未进行过任何对局。</div>
+    </div>
+  } else {
+    body = <table className="league-table">
+      <thead>
+        <tr>
+          <th>英雄</th>
+          <th>胜负</th>
+          <th>排位分</th>
+          <th>出装及技能</th>
+          <th>K / D / A</th>
+          <th>金钱</th>
+          <th>伤害</th>
+          <th>承伤</th>
+          <th>治疗</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((item, index) => (
+          <tr className="cursor-pointer" onClick={() => {
+            router.push(`game?gameid=${item.gameId}`);
+          }} key={item.gameId}>
+            <td>
+              <GameEogChampion championId={item.playerData.championId}
+                name={item.playerData.championName} level={item.playerData.stats.LEVEL}
+              />
+            </td>
+            <td className={`${item.isWin ? 'text-blue-400' : 'text-red-400'} font-bold`} >{item.isWin ? '胜利' : '失败'}</td>
+            <td className={`${item.isWin ? 'text-blue-400' : 'text-red-400'}`} >{item.scoreDelta >= 0 && '+'} {item.scoreDelta}</td>
+            <td>
+              <GameEogSpellAndItems spells={[item.playerData.spell1Id, item.playerData.spell2Id]} items={item.playerData.items} />
+            </td>
+            <td>{item.playerData.stats.CHAMPIONS_KILLED} / {item.playerData.stats.NUM_DEATHS} / {item.playerData.stats.ASSISTS}</td>
+            <td>{item.playerData.stats.GOLD_EARNED}</td>
+            <td>{item.playerData.stats.TOTAL_DAMAGE_DEALT_TO_CHAMPIONS}</td>
+            <td>{item.playerData.stats.TOTAL_DAMAGE_TAKEN}</td>
+            <td>{item.playerData.stats.TOTAL_HEAL}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   }
 
   return (
-    <LeaguePage title="欢迎" showButton confirmText="进入" onConfirm={() => {
-      regist();
-    }} onCancel={() => {
-      router.back();
-    }}>
-
-      <div className="my-8 *:my-2 flex flex-col max-w-[300px] mx-auto">
-        <label className="block text-sm font-medium text-gray-100">服务器地址</label>
-        <input type="text" className="league-input" placeholder="请输入服务器地址" value={server} onChange={(e) => {
-          setServer(e.target.value);
-        }} />
-
-        <label className="block text-sm font-medium text-gray-100">真实姓名</label>
-        <input type="text" className="league-input" placeholder="请输入真实姓名" value={realName} onChange={(e) => {
-          setRealName(e.target.value);
-        }} />
-        <label className="block text-sm font-medium text-gray-100">游戏ID</label>
-
-        <input type="text" className="league-input" readOnly placeholder="请输入游戏ID" value={gameID} onChange={(e) => {
-          setGameID(e.target.value);
-        }} />
-
-        <label className="block text-sm font-medium text-gray-100">音效音量</label>
-        <input type="range" className="league-input-range" min="0" max="100" step="1" value={volume} onChange={(e) => {
-          setVolume(parseInt(e.target.value));
-        }} />
+    <LeaguePage title={(summonerName ? summonerName + "的" : "") + "对局记录"} showBack titleToolButtons={
+      <div>
+        <button className="league-btn" onClick={getItems}>刷新</button>
       </div>
-
+    }>
+      {body}
     </LeaguePage>
-
-
   );
 
 }

@@ -47,11 +47,12 @@ export default function Room() {
   const socket = useRef<Socket | null>(null);
 
   const connectToRoom = async () => {
-    let championList;
+    let championList: number[] | undefined;
     try {
       championList = await leagueHandler.getOwnedChampions(sessionService.summonerId!);
     } catch (e) {
       setConnectionFailedReason("无法从客户端获取英雄列表");
+      return;
     }
 
     socket.current = getRoomSocket({
