@@ -70,7 +70,7 @@ export default function () {
       <tbody>
         {data.map((item, index) => (
           <tr className="cursor-pointer" onClick={() => {
-            router.push(`game?gameid=${item.gameId}`);
+            router.push(`/game?gameid=${item.gameId}`);
           }} key={item.gameId}>
             <td>
               <GameEogChampion championId={item.playerData.championId}

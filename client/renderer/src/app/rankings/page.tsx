@@ -55,7 +55,7 @@ export default function RankingsPage() {
       <tbody>
         {data.map((item, index) => (
           <tr className="cursor-pointer" onClick={() => {
-            router.push(`user?userid=${item.summonerId}&summonerName=${item.name}`);
+            router.push(`/user?userid=${item.summonerId}&summonerName=${item.name}`);
           }}>
             <td>{index + 1}</td>
             <td>{item.name}</td>

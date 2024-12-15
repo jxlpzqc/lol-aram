@@ -28,7 +28,7 @@ export function checkUpdate(app: App, mainWindow: BrowserWindow) {
   autoUpdater.on('update-available', async (info) => {
     _updateInfo = info;
     if (isProd) {
-      mainWindow?.loadURL('app://./update.html')
+      mainWindow?.loadURL('app://./update')
     } else {
       const port = process.argv[2]
       mainWindow?.loadURL(`http://localhost:${port}/update`)
