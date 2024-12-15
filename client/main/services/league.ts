@@ -17,7 +17,14 @@ export async function isLeagueRunning() {
 let _websocket: LeagueWebSocket | null = null;
 
 export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
-    if (_websocket?.OPEN || _websocket?.CONNECTING) return;
+    if (_websocket?.readyState == LeagueWebSocket.OPEN) return;
+    if (_websocket?.readyState == LeagueWebSocket.CONNECTING) {
+        await new Promise((resolve) => {
+            _websocket?.addEventListener('open', resolve);
+        });
+        return;
+    }
+
     _websocket = await createWebSocketConnection();
 
     const reportClose = (e) => {
@@ -32,7 +39,7 @@ export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
         mainWindow.webContents.send('league:endOfGame', data);
     });
 
-    if (_websocket.OPEN) return;
+    if (_websocket.readyState == LeagueWebSocket.OPEN) return;
 
     // wait for the connection to be ready
     await new Promise((resolve) => {
