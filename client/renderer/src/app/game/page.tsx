@@ -50,7 +50,9 @@ export default function () {
       {
         data?.teams.map((d, i) => (
           <div>
-            <h2 className="font-extrabold text-xl my-2 px-2">队伍 {i + 1}</h2>
+            <h2 className={"font-extrabold text-xl my-2 px-2 " + (d.isWinningTeam ? "text-blue-400" : "text-red-400")}>
+              队伍 {i + 1} （{d.isWinningTeam ? "胜利" : "失败"}）
+            </h2>
 
             <table className="league-table table-fixed">
               <thead>
