@@ -6,6 +6,8 @@ import { getRankings } from "../../services/room";
 import { useRouter } from "next/navigation";
 import LoadingPage from "../../components/LoadingPage";
 import FailPage from "../../components/FailPage";
+import { isWeb } from "../../services/env";
+import sessionService from '@renderer/src/services/session';
 
 export default function RankingsPage() {
 
@@ -26,6 +28,11 @@ export default function RankingsPage() {
   };
 
   useEffect(() => {
+    if (isWeb()) {
+      const server = global.window.localStorage.getItem("server");
+      sessionService.registWeb({ server: server || "lol.fancybag.cn:22001" });
+    }
+
     getItems();
   }, []);
 
@@ -69,9 +76,12 @@ export default function RankingsPage() {
   }
 
   return (
-    <LeaguePage title="天梯排名" showBack titleToolButtons={
-      <div>
+    <LeaguePage title="天梯排名" showBack={!isWeb()} titleToolButtons={
+      <div className="flex gap-4">
         <button className="league-btn" onClick={getItems}>刷新</button>
+        {isWeb() && <button className="league-btn" onClick={() => {
+          router.push("/settings");
+        }}>配置</button>}
       </div>
     }>
       {body}

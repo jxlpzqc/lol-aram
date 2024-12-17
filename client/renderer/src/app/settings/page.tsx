@@ -9,6 +9,7 @@ import FailPage from "../../components/FailPage";
 import sessionService from "../../services/session";
 import { setVolume as soundServiceSetVolume } from '../../services/sound';
 import LeaguePage from "../../components/LeaguePage";
+import { isWeb } from "../../services/env";
 
 export default function () {
 
@@ -27,6 +28,11 @@ export default function () {
     parseInt(globalThis?.localStorage?.getItem("volume") || "50") : 50);
 
   const getInfo = async () => {
+    if (isWeb()) {
+      setStatus(1);
+      return;
+    }
+
     setStatus(0);
     try {
       setLoadingMsg("正在与客户端建立实时通信...");
@@ -47,6 +53,12 @@ export default function () {
   }, []);
 
   const regist = () => {
+    if (isWeb()) {
+      sessionService.registWeb({ server });
+      globalThis?.localStorage?.setItem("server", server);
+      router.replace(`/rankings`);
+      return;
+    }
     if (!summonerId.current) return;
     try {
       const id = summonerId.current.toString();
@@ -91,20 +103,24 @@ export default function () {
           setServer(e.target.value);
         }} />
 
-        <label className="block text-sm font-medium text-gray-100">真实姓名</label>
-        <input type="text" className="league-input" placeholder="请输入真实姓名" value={realName} onChange={(e) => {
-          setRealName(e.target.value);
-        }} />
-        <label className="block text-sm font-medium text-gray-100">游戏ID</label>
+        {!isWeb() && <>
 
-        <input type="text" className="league-input" readOnly placeholder="请输入游戏ID" value={gameID} onChange={(e) => {
-          setGameID(e.target.value);
-        }} />
+          <label className="block text-sm font-medium text-gray-100">真实姓名</label>
+          <input type="text" className="league-input" placeholder="请输入真实姓名" value={realName} onChange={(e) => {
+            setRealName(e.target.value);
+          }} />
+          <label className="block text-sm font-medium text-gray-100">游戏ID</label>
 
-        <label className="block text-sm font-medium text-gray-100">音效音量</label>
-        <input type="range" className="league-input-range" min="0" max="100" step="1" value={volume} onChange={(e) => {
-          setVolume(parseInt(e.target.value));
-        }} />
+          <input type="text" className="league-input" readOnly placeholder="请输入游戏ID" value={gameID} onChange={(e) => {
+            setGameID(e.target.value);
+          }} />
+
+          <label className="block text-sm font-medium text-gray-100">音效音量</label>
+          <input type="range" className="league-input-range" min="0" max="100" step="1" value={volume} onChange={(e) => {
+            setVolume(parseInt(e.target.value));
+          }} />
+        </>
+        }
       </div>
 
     </LeaguePage>

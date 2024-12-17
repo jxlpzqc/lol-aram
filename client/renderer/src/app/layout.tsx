@@ -5,6 +5,7 @@ import { Suspense, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import sessionService from "../services/session"
 import leagueHandler from "../services/league";
+import { isWeb } from "../services/env";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -27,6 +28,13 @@ export default function RootLayout({
   const pathname = usePathname();
 
   useEffect(() => {
+    if (isWeb()) {
+      if (pathname === "/room" || pathname === "/") {
+        router.replace("/rankings");
+      }
+      return;
+    }
+
     if (!sessionService.registed && pathname !== "/update" && pathname !== '/update.html' && pathname !== "/settings") {
       router.push("/settings");
     }

@@ -6,6 +6,15 @@ let _sessionID: string | null = null;
 let _server: string | null = null;
 
 export default {
+    registWeb(info: {
+        server: string,
+    }) {
+        if (!info.server) {
+            throw new Error("请填写完整信息！");
+        }
+        _registed = true;
+        _server = info.server
+    },
 
     regist(info: {
         server: string,

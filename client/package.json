@@ -11,7 +11,9 @@
     "dev": "nextron",
     "build": "nextron build --publish never",
     "build:publish": "nextron build --publish always",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "dev:web": "cross-env NEXT_PUBLIC_BUILD_TARGET=web next dev ./renderer",
+    "build:web": "cross-env NEXT_PUBLIC_BUILD_TARGET=web next build ./renderer"
   },
   "dependencies": {
     "electron-updater": "^6.3.9",
@@ -24,6 +26,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-serve": "^2.1.1",
