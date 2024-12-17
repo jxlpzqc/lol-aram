@@ -117,9 +117,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private checkNeedStop(room: rooms.RoomInfo, otherAction?: () => void) {
     if (room.needStop) {
       room.needStop = false;
-      room.status = 'waiting';
+      // room.status = 'waiting';
       otherAction?.();
-      this.notifyRoom(room);
+      // this.notifyRoom(room);
       throw new Error('Room is stopped');
     }
   }
@@ -184,7 +184,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     while (time > 0) {
       this.emitToRoom(roomInfo, 'time', { time });
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      this.checkNeedStop(roomInfo);
+      this.checkNeedStop(roomInfo, () => {
+        roomInfo.status = 'waiting';
+        this.notifyRoom(roomInfo);
+      });
 
       if (roomInfo.status !== 'playing') return;
       time--;
@@ -208,11 +211,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const sockets = socketsRaw.filter((s) => s !== undefined) as Socket[];
 
-    const finishExecute = () => {
-      this.notifyRoom(roomInfo, 'finish');
-      roomInfo.status = 'waiting';
-      this.notifyRoom(roomInfo);
-    };
+    // const finishExecute = () => {
+    //   this.notifyRoom(roomInfo, 'finish');
+    //   roomInfo.status = 'waiting';
+    //   this.notifyRoom(roomInfo);
+    // };
 
     if (!progressMsgWhenFail) {
       progressMsgWhenFail = progressMsg + "失败";
@@ -333,17 +336,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       p.status = 2;
       this.emitToRoom(roomInfo, 'executeProgress', p);
 
-      finishExecute();
       throw e;
     }
   }
 
   private async executeGame(roomInfo: rooms.RoomInfo) {
 
-    const ck = () => {
+    const ck = (msg = '由于玩家退出，游戏启动进程已停止', selfProgressId = undefined) => {
+      if (selfProgressId === undefined) selfProgressId = progressID;
       this.checkNeedStop(roomInfo, () => {
         this.emitToRoom(roomInfo, 'executeProgress', {
-          id: progressID, message: '由于玩家退出，游戏启动进程已停止', status: 2
+          id: selfProgressId, message: msg, status: 2
         });
       });
     }
@@ -431,6 +434,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       await new Promise(resolve => setTimeout(resolve, 2000));
+      ck();
 
       await this.emitEventAndUpdateProgressWithAck(
         [firstPlayer?.socket],
@@ -457,125 +461,137 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       ck();
 
-      let intervalId;
-
-      this.emitToRoom(roomInfo, "executeProgress", {
-        id: progressID,
-        message: "正在等待游戏结果",
-        status: 0
-      });
-
-      const gameEndData = await new Promise<any>((resolve, reject) => {
-        const onEndofGame = (d: any) => {
-          offAll();
-          clearInterval(intervalId);
-          resolve(d);
-        }
-
-        const offAll = () => {
-          for (const user of roomInfo.users.filter(u => !!u)) {
-            user.socket.off("end-of-game", onEndofGame);
-          }
-        }
-
-        intervalId = setInterval(() => {
-          try {
-            ck();
-          } catch (e) {
-            reject(e);
-          }
-        }, 1000);
-
-        for (const user of roomInfo.users.filter((u) => !!u)) {
-          user.socket.on('end-of-game', onEndofGame);
-        }
-      });
-
-      this.emitToRoom(roomInfo, "executeProgress", {
-        id: progressID,
-        message: "游戏结果已经生成",
-        status: 1,
-      });
-
-      /**
-       * Calculate delta score
-       * @param win the game is win
-       * @param gameCount game count in this season
-       * @param scoreDifference other team - this team
-       */
-      const getDelta = (win: boolean, gameCount: number, scoreDifference: number) => {
-        let d: number;
-        if (win)
-          d = 20 + (1 / (gameCount + 4)) * 80 + Math.max(-5, (scoreDifference) / 50)
-        else
-          d = -20 + Math.min(5, (scoreDifference) / 50)
-        return Math.round(d);
-      }
-
-      const handleEndOfGameData = async (data) => {
-        // console.log(data);
-        // save data to game
-        await this.db.game.create({
-          data: {
-            gameId: data.gameId.toString(),
-            statusBlock: JSON.stringify(data),
-          }
-        })
-
-        for (const team of data.teams) {
-          for (const player of team.players) {
-            const smid: number = player.summonerId;
-            const isWin = team.isWinningTeam;
-            const gameCount = (await this.db.user.findUnique({
-              where: {
-                summonerId: smid.toString()
-              }
-            }).games() || []).length;
-            const blueTeamScore = roomInfo.users.slice(0, 5).map((u) => u?.user.rankScore || 0).reduce((a, b) => a + b, 0);
-            const redTeamScore = roomInfo.users.slice(5).map((u) => u?.user.rankScore || 0).reduce((a, b) => a + b, 0);
-            const isBlue = rooms.getUserGroup(roomInfo, smid.toString()) === 0;
-            const scoreDifference = isBlue ? redTeamScore - blueTeamScore : blueTeamScore - redTeamScore;
-            const delta = getDelta(isWin, gameCount, scoreDifference);
-
-            await this.db.user.upsert({
-              where: {
-                summonerId: smid.toString()
-              },
-              create: {
-                summonerId: smid.toString(),
-                name: player.summonerName || "N/A",
-                nickname: "",
-                rankScore: DEFAULT_RANK_SCORE + delta
-              },
-              update: {
-                rankScore: {
-                  increment: delta
-                }
-              }
-            })
-
-            await this.db.gameUserMapping.create({
-              data: {
-                gameId: data.gameId.toString(),
-                userId: smid.toString(),
-                isWin,
-                scoreDelta: delta
-              }
-            });
-
-            this.logger.log(`Game ${data.gameId} finish, update user ${player.summonerId} (${player.summonerName}) with wining: ${team.isWinningTeam}`)
-          }
-        }
-
-
-        for (const user of roomInfo.users.filter((u) => !!u)) {
-          user.user.rankScore = await this.getPlayerRankScore(user.user);
-        }
-        this.notifyRoom(roomInfo);
-      }
-      await handleEndOfGameData(gameEndData);
-
+    } catch (e) {
+      progressID++;
+      this.logger.error(`Error when executing game: ${e}, then waiting for game result`);
     } finally {
+      try {
+        let intervalId;
+
+        const selfProgessID = progressID++;
+
+        this.emitToRoom(roomInfo, "executeProgress", {
+          id: selfProgessID,
+          message: "正在等待游戏结果",
+          status: 0
+        });
+
+        const gameEndData = await new Promise<any>((resolve, reject) => {
+          const onEndofGame = (d: any) => {
+            offAll();
+            clearInterval(intervalId);
+            resolve(d);
+          }
+
+          const offAll = () => {
+            for (const user of roomInfo.users.filter(u => !!u)) {
+              user.socket.off("end-of-game", onEndofGame);
+            }
+          }
+
+          intervalId = setInterval(() => {
+            // console.log("Waiting for game result canceled...");
+            try {
+              ck("等待游戏结果已经取消，启动进程结束", selfProgessID);
+            } catch (e) {
+              offAll();
+              clearInterval(intervalId);
+              reject(e);
+            }
+          }, 1000);
+
+          for (const user of roomInfo.users.filter((u) => !!u)) {
+            user.socket.on('end-of-game', onEndofGame);
+          }
+        });
+
+        this.emitToRoom(roomInfo, "executeProgress", {
+          id: selfProgessID,
+          message: "游戏结果已经生成",
+          status: 1,
+        });
+
+        /**
+         * Calculate delta score
+         * @param win the game is win
+         * @param gameCount game count in this season
+         * @param scoreDifference other team - this team
+         */
+        const getDelta = (win: boolean, gameCount: number, scoreDifference: number) => {
+          let d: number;
+          if (win)
+            d = 20 + (1 / (gameCount + 4)) * 80 + Math.max(-5, (scoreDifference) / 50)
+          else
+            d = -20 + Math.min(5, (scoreDifference) / 50)
+          return Math.round(d);
+        }
+
+        const handleEndOfGameData = async (data) => {
+          // console.log(data);
+          // save data to game
+          await this.db.game.create({
+            data: {
+              gameId: data.gameId.toString(),
+              statusBlock: JSON.stringify(data),
+            }
+          })
+
+          for (const team of data.teams) {
+            for (const player of team.players) {
+              const smid: number = player.summonerId;
+              const isWin = team.isWinningTeam;
+              const gameCount = (await this.db.user.findUnique({
+                where: {
+                  summonerId: smid.toString()
+                }
+              }).games() || []).length;
+              const blueTeamScore = roomInfo.users.slice(0, 5).map((u) => u?.user.rankScore || 0).reduce((a, b) => a + b, 0);
+              const redTeamScore = roomInfo.users.slice(5).map((u) => u?.user.rankScore || 0).reduce((a, b) => a + b, 0);
+              const isBlue = rooms.getUserGroup(roomInfo, smid.toString()) === 0;
+              const scoreDifference = isBlue ? redTeamScore - blueTeamScore : blueTeamScore - redTeamScore;
+              const delta = getDelta(isWin, gameCount, scoreDifference);
+
+              await this.db.user.upsert({
+                where: {
+                  summonerId: smid.toString()
+                },
+                create: {
+                  summonerId: smid.toString(),
+                  name: player.summonerName || "N/A",
+                  nickname: "",
+                  rankScore: DEFAULT_RANK_SCORE + delta
+                },
+                update: {
+                  rankScore: {
+                    increment: delta
+                  }
+                }
+              })
+
+              await this.db.gameUserMapping.create({
+                data: {
+                  gameId: data.gameId.toString(),
+                  userId: smid.toString(),
+                  isWin,
+                  scoreDelta: delta
+                }
+              });
+
+              this.logger.log(`Game ${data.gameId} finish, update user ${player.summonerId} (${player.summonerName}) with wining: ${team.isWinningTeam}`)
+            }
+          }
+
+
+          for (const user of roomInfo.users.filter((u) => !!u)) {
+            user.user.rankScore = await this.getPlayerRankScore(user.user);
+          }
+          this.notifyRoom(roomInfo);
+        }
+        await handleEndOfGameData(gameEndData);
+      } catch (e) {
+        this.logger.error(e);
+      }
+
       this.notifyRoom(roomInfo, 'finish');
       roomInfo.status = 'waiting';
       this.notifyRoom(roomInfo);
