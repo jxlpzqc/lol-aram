@@ -28,11 +28,6 @@ export default function RankingsPage() {
   };
 
   useEffect(() => {
-    if (isWeb()) {
-      const server = global.window.localStorage.getItem("server");
-      sessionService.registWeb({ server: server || "lol.fancybag.cn/api" });
-    }
-
     getItems();
   }, []);
 

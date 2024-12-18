@@ -18,7 +18,7 @@ export default function () {
   const summonerId = useRef<string | null>();
   const [realName, setRealName] = useState(globalThis?.localStorage?.getItem("realName") || "");
   const [gameID, setGameID] = useState(globalThis?.localStorage?.getItem("gameID") || "");
-  const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || "lol.fancybag.cn:22001");
+  const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || (isWeb() ? "lol.fancybag.cn/api" : "lol.fancybag.cn:22001"));
 
   // 0 - loading, 1 - success, 2 - fail
   const [status, setStatus] = useState(0);

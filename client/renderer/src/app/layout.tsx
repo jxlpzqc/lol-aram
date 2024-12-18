@@ -27,6 +27,11 @@ export default function RootLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  if (isWeb()) {
+    const server = global.window?.localStorage.getItem("server");
+    sessionService.registWeb({ server: server || "lol.fancybag.cn/api" });
+  }
+
   useEffect(() => {
     if (isWeb()) {
       if (pathname === "/room" || pathname === "/") {
