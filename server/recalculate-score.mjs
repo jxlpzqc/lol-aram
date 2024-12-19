@@ -112,7 +112,7 @@ const handleEndOfGameData = async (game, users, db) => {
 async function main() {
 
   const db = new PrismaClient({
-    log: ["query"],
+    // log: ["query"],
   });
   db.$connect();
 
