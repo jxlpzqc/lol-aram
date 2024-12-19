@@ -46,9 +46,9 @@ const handleEndOfGameData = async (game, users, db) => {
 
   for (const team of data.teams) {
     for (const player of team.players) {
+      const smid = player.summonerId.toString();
       const user = users.find(x => x.id == smid);
 
-      const smid = player.summonerId.toString();
       const isWin = team.isWinningTeam;
       const gameCount = user?.gamecount || 0;
 
