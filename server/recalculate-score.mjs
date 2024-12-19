@@ -97,6 +97,7 @@ const handleEndOfGameData = async (game, users, db) => {
 
       if (user) {
         user.score = newscore;
+        user.gamecount++;
       } else {
         users.push({
           id: smid,
