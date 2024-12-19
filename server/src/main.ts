@@ -1,6 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+// fix raw query bigint issue
+// @ts-ignore
+BigInt.prototype.toJSON = function () {
+  const int = Number.parseInt(this.toString());
+  return Number.isSafeInteger(int) ? int : this.toString();
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
