@@ -30,7 +30,7 @@ const getDelta = (win, gameCount, scoreDifference) => {
 const handleEndOfGameData = async (game, users, db) => {
   // console.log(data);
 
-  /** @type {import("../shared/contract").LeagueGameEogData} */
+  /** @type {import("../../shared/contract").LeagueGameEogData} */
   const data = JSON.parse(game.statusBlock);
 
   let teamRankScores = [0, 0]

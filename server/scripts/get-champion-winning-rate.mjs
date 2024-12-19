@@ -12,7 +12,7 @@ const calculate = async (db) => {
   const champions = [];
   const games = await db.game.findMany();
   for (const game of games) {
-    /** @type {import("../shared/contract").LeagueGameEogData} */
+    /** @type {import("../../shared/contract").LeagueGameEogData} */
     const data = JSON.parse(game.statusBlock);
     for (const team of data.teams) {
       for (const player of team.players) {

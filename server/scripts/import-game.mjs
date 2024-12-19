@@ -26,7 +26,7 @@ const getDelta = (win, gameCount, scoreDifference) => {
 /**
  * 
  * @param {import("@prisma/client").PrismaClient} db 
- * @param {import("../shared/contract").LeagueGameEogData} data 
+ * @param {import("../../shared/contract").LeagueGameEogData} data 
  */
 const handleEndOfGameData = async (data, db) => {
   // console.log(data);
