@@ -52,8 +52,8 @@ async function main() {
   console.log("Champion | Win | Fail | All | Winning Rate");
 
   for (const champion of champions) {
-    const rate = champion.winning / champion.all;
-    console.log(`${champion.name} | ${champion.winning} | ${champion.all - champion.winning} | ${champion.all} | ${rate.toFixed(3)}`);
+    const rate = champion.winning / champion.all * 100;
+    console.log(`${champion.name} | ${champion.winning} | ${champion.all - champion.winning} | ${champion.all} | ${rate.toFixed(3)}%`);
   }
 }
 
