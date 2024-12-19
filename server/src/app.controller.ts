@@ -26,7 +26,7 @@ export class AppController {
       nickname, 
       rankScore, 
       COUNT(gum.gameid) AS games, 
-      COUNT(IIF(gum.isWin, 1, NULL)) AS winedGames, 
+      COUNT(IIF(gum.isWin, 1, NULL)) AS winnedGames, 
       COUNT(IIF(gum.isWin, NULL, 1)) AS failedGames, 
       COUNT(IIF(gum.isWin, 1, NULL)) * 1.0 / COUNT(gum.gameid)  AS winRate
     FROM "User" u
