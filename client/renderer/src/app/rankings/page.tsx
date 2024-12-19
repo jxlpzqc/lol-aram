@@ -52,6 +52,9 @@ export default function RankingsPage() {
           <th className="w-10">昵称</th>
           <th>排位分</th>
           <th>游戏场次</th>
+          <th>胜场</th>
+          <th>败场</th>
+          <th>胜率</th>
         </tr>
       </thead>
       <tbody>
@@ -64,6 +67,9 @@ export default function RankingsPage() {
             <td className="truncate max-w-[400px]" title={item.nickname}>{item.nickname}</td>
             <td>{item.rankScore}</td>
             <td>{item.games}</td>
+            <td>{item.winnedGames}</td>
+            <td>{item.failedGames}</td>
+            <td>{(item.winRate * 100).toFixed(2)}%</td>
           </tr>
         ))}
       </tbody>

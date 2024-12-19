@@ -54,6 +54,9 @@ export type RankingDTO = {
   nickname: string;
   rankScore: number;
   games: number;
+  winnedGames: number;
+  failedGames: number;
+  winRate: number;
 };
 
 export interface LeagueGameEogData {

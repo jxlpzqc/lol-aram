@@ -20,26 +20,21 @@ export class AppController {
 
   @Get('rankings')
   async getRankings(): Promise<RankingDTO[]> {
-    const result = await this.db.user.findMany({
-      include: {
-        _count: {
-          select: {
-            games: true
-          }
-        },
-      },
-      orderBy: {
-        rankScore: 'desc'
-      }
-    })
-
-    return result.map((user) => ({
-      summonerId: user.summonerId,
-      name: user.name,
-      nickname: user.nickname,
-      rankScore: user.rankScore,
-      games: user._count.games,
-    }));
+    const ret = await this.db.$queryRaw`SELECT
+      summonerId, 
+      name, 
+      nickname, 
+      rankScore, 
+      COUNT(gum.gameid) AS games, 
+      COUNT(IIF(gum.isWin, 1, NULL)) AS winedGames, 
+      COUNT(IIF(gum.isWin, NULL, 1)) AS failedGames, 
+      COUNT(IIF(gum.isWin, 1, NULL)) * 1.0 / COUNT(gum.gameid)  AS winRate
+    FROM "User" u
+    LEFT JOIN "GameUserMapping" gum ON u.summonerId = gum.userId
+    GROUP BY u.summonerId
+    ORDER BY rankScore DESC
+    `;
+    return ret as RankingDTO[];
   }
 
   @Get('users/:userid/games')
