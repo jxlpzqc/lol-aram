@@ -38,17 +38,18 @@ const handleEndOfGameData = async (data, db) => {
     }
   })
 
-  let teamRankScores = []
+  let teamRankScores = [0, 0]
 
-  for (const team of data.teams) {
+  for (let teamid = 0; teamid < 2; teamid++) {
+    const team = data.teams[teamid];
     for (const player of team.players) {
       const smid = player.summonerId;
       const score = (await db.user.findUnique({
         where: {
           summonerId: smid.toString()
         }
-      }))?.rankScore || 0;
-      teamRankScores.push(score);
+      }))?.rankScore || 1200;
+      teamRankScores[teamid] += score;
     }
   }
 
