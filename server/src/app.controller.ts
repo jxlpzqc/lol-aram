@@ -3,6 +3,7 @@ import * as rooms from './rooms';
 import { LeagueGameEogData, RankingDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
 import { PrismaService } from './prisma.service';
 
+const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
 
 @Controller()
 export class AppController {
@@ -20,7 +21,7 @@ export class AppController {
 
   @Get('rankings')
   async getRankings(): Promise<RankingDTO[]> {
-    const ret = await this.db.$queryRaw`SELECT
+    let ret = await this.db.$queryRaw`SELECT
       summonerId, 
       name, 
       nickname, 
@@ -33,8 +34,16 @@ export class AppController {
     LEFT JOIN "GameUserMapping" gum ON u.summonerId = gum.userId
     GROUP BY u.summonerId
     ORDER BY rankScore DESC
-    `;
-    return ret as RankingDTO[];
+    ` as RankingDTO[];
+
+    if (isHideRankScore) {
+      ret = ret.map(x => ({
+        ...x,
+        rankScore: 0
+      })).sort((a, b) => (a.summonerId.localeCompare(b.summonerId)))
+    }
+
+    return ret;
   }
 
   @Get('users/:userid/games')

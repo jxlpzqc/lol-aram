@@ -27,6 +27,8 @@ export type RoomInfo = {
   needStop?: boolean;
 };
 
+const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
+
 const rooms: RoomInfo[] = [];
 
 function generateID(): string {
@@ -331,6 +333,7 @@ export function roomToClient(room: RoomInfo, userid: string): RoomDTO {
           gameData: (room.status !== 'playing' ||
             getSeatIndexGroup(i) === currentUserGroup) ?
             x.user.gameData : undefined,
+          rankScore: isHideRankScore ? 0 : x.user.rankScore
         },
     )
   }
