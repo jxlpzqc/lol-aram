@@ -10,7 +10,9 @@ export type RoomGameData = {
 };
 
 export type GameData = GameDataDTO;
-export type UserInfo = UserDTO;
+export type UserInfo = UserDTO & {
+  autoArrangeRankScore?: number
+};
 
 export type UserAndSocket = {
   user: UserInfo;

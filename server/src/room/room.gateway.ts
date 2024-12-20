@@ -164,8 +164,27 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('autoarrange')
   async autoarrange(client: Socket) {
     const roomInfo = this.socketToRoomInfo(client);
+
+    // fix rankscore with recent win rate
     for (const user of roomInfo.users.filter((u) => !!u)) {
+      const recentGames = await this.db.gameUserMapping.findMany({
+        orderBy: {
+          game: {
+            time: 'desc'
+          }
+        }
+      });
+      const lastGameWin = recentGames?.[0]?.isWin;
+      let sameCount = 0;
+
+      for (let i = 1; i < recentGames.length; ++i) {
+        if (recentGames[i].isWin === lastGameWin) sameCount++;
+        else break;
+      }
+      const recentScoreFix = (lastGameWin ? 40 : -40) * Math.pow(sameCount, 1.5);
       user.user.rankScore = await this.getPlayerRankScore(user.user);
+      user.user.autoArrangeRankScore = user.user.rankScore + recentScoreFix;
+      this.logger.log(`Autorange score ${user.user.gameID}: ${user.user.autoArrangeRankScore} (${user.user.rankScore} + ${recentScoreFix})`)
     }
     rooms.autoArrangeRoom(roomInfo);
     this.notifyRoom(roomInfo);
