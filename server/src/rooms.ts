@@ -281,22 +281,34 @@ export function autoArrangeRoom(room: RoomInfo) {
 
   const combination = new Array(Math.floor(users.length / 2)).fill(0).map((_, i) => i);
   let result: number[];
+  let notBestResults: number[][];
 
   const getDifference = () => {
-    const blueTeam = combination.reduce((x, c) => (x + (users[c].user.rankScore || 0)), 0);
-    const redTeam = users.reduce((x, c, i) => (combination.includes(i) ? x : x + (c.user.rankScore || 0)), 0);
+    const blueTeam = combination.reduce((x, c) => (x + (users[c].user.autoArrangeRankScore || 0)), 0);
+    const redTeam = users.reduce((x, c, i) => (combination.includes(i) ? x : x + (c.user.autoArrangeRankScore || 0)), 0);
     return Math.abs(blueTeam - redTeam);
   }
+
+  const NOTBEST_THRESHOLD = 300;
 
   let minDifference = getDifference();
   result = [...combination];
 
   while (nextCombination(combination, users.length, Math.floor(users.length / 2))) {
+    const combinationCopy = [...combination];
     if (getDifference() < minDifference) {
       minDifference = getDifference();
-      result = [...combination];
+      result = combinationCopy;
+    }
+    if (getDifference() < NOTBEST_THRESHOLD) {
+      notBestResults.push(combinationCopy);
     }
   }
+
+  const results = Array.from(new Set([result, ...notBestResults]))
+
+  // get random from results
+  result = results[Math.floor(Math.random() * results.length)];
 
   // redTeam result
   const blueTeamIdxResult = result;
