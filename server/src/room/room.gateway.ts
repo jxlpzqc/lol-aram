@@ -164,6 +164,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('autoarrange')
   async autoarrange(client: Socket) {
     const roomInfo = this.socketToRoomInfo(client);
+    for (const user of roomInfo.users.filter((u) => !!u)) {
+      user.user.rankScore = await this.getPlayerRankScore(user.user);
+    }
     rooms.autoArrangeRoom(roomInfo);
     this.notifyRoom(roomInfo);
   }
