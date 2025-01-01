@@ -16,6 +16,24 @@ const DEFAULT_RANK_SCORE = 1200;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const checkStop = (room: rooms.RoomInfo) => new Promise((resolve, reject) => room.needStop.once('stop', reject));
+const delayAndCheckStop = (room: rooms.RoomInfo, ms: number) => {
+  let onStop;
+  let timeout;
+  return Promise.race([
+    new Promise((resolve) => {
+      timeout = setTimeout(resolve, ms);
+    }),
+    new Promise((_, reject) => {
+      onStop = (e: Error) => {
+        reject(e);
+      }
+      room.needStop.once('stop', onStop);
+    })
+  ]).finally(() => {
+    clearTimeout(timeout);
+    room.needStop.off('stop', onStop);
+  });
+}
 
 @WebSocketGateway({
   cors: {
@@ -336,13 +354,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     roomInfo.status = 'executing';
     this.notifyRoom(roomInfo);
 
-    const delayAndCheckStop = (ms: number) => {
-      return Promise.race([
-        delay(ms),
-        checkStop(roomInfo)
-      ]);
-    }
-
     let progressID = 0;
     let preparedCount = 0;
 
@@ -401,7 +412,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         status: 0
       });
 
-      await delayAndCheckStop(5000);
+      await delayAndCheckStop(roomInfo, 5000);
 
       for (const otherUser of roomInfo.users.filter((u) => u !== firstPlayer && u !== null)) {
 
@@ -418,7 +429,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         );
       }
 
-      await delayAndCheckStop(2000);
+      await delayAndCheckStop(roomInfo, 2000);
 
       await this.emitEventAndUpdateProgressWithAck(
         [firstPlayer?.socket],
