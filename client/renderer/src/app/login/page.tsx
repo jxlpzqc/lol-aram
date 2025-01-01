@@ -120,7 +120,6 @@ export default function () {
       }
 
       if (ret.ok) {
-        setStatus(1);
         setFailMsg(ret.message || "");
       } else {
         setStatus(2);
