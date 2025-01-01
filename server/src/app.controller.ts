@@ -43,7 +43,8 @@ export class AppController {
       ]
     };
 
-    if (req.version === "0.4.0") {
+    const [major, minor, patch] = req.version.split('.').map(x => parseInt(x));
+    if (major === 0 && minor === 4) {
       return { serverInfo, ok: true }
     }
     return { serverInfo, ok: false, message: "当前版本不支持，请更新到 0.4.0 以上版本" }
