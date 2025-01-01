@@ -25,7 +25,6 @@ const debounce = (func: Function, delay: number, timerRef: React.MutableRefObjec
 function Banner({ banner, onFinish }: { banner?: ServerInfoBanner, onFinish?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    if (videoRef.current && videoRef.current.paused) { videoRef.current.currentTime = 0; videoRef.current.play(); }
     if (!banner || banner.type === 'video') return;
     const timeout = setTimeout(() => {
       onFinish?.();
@@ -42,7 +41,13 @@ function Banner({ banner, onFinish }: { banner?: ServerInfoBanner, onFinish?: ()
   </div>;
 
   return <div className="h-full w-full flex items-center justify-center">
-    {banner.type === 'video' ? <video ref={videoRef} autoPlay muted className="h-full w-full object-cover" onError={onFinish} onEnded={onFinish} src={banner.url} />
+    {banner.type === 'video' ? <video ref={videoRef} autoPlay muted className="h-full w-full object-cover" onError={onFinish} onEnded={() => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play();
+      }
+      onFinish?.();
+    }} src={banner.url} />
       : <img src={banner.url} className="h-full w-full object-cover" />}
   </div>
 }
@@ -182,7 +187,7 @@ export default function () {
     <div className="h-screen bg-[#0005] flex">
       <div className="fixed inset-0 z-[-1]">
         <Banner banner={banner} onFinish={() => {
-          if (banner) setBanner({ ...banners[(banners.indexOf(banner) + 1) % banners.length] });
+          if (banner) setBanner(banners[(banners.indexOf(banner) + 1) % banners.length]);
         }} />
       </div>
 
