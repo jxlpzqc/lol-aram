@@ -10,8 +10,8 @@ type Props = {
 export default function (props: Props) {
 
   const [soundVolume, setSoundVolume] = useState(globalThis?.localStorage?.getItem("volume") ? parseInt(globalThis?.localStorage?.getItem("soundVolume") || "50") : 50);
-  const [musicVolume, setMusicVolume] = useState(globalThis?.localStorage?.getItem("musicVolume") ? parseInt(globalThis?.localStorage?.getItem("soundVolume") || "50") : 50);
-  const [pickSoundVolume, setPickSoundVolume] = useState(globalThis?.localStorage?.getItem("pickSoundVolume") ? parseInt(globalThis?.localStorage?.getItem("soundVolume") || "50") : 50);
+  const [musicVolume, setMusicVolume] = useState(globalThis?.localStorage?.getItem("musicVolume") ? parseInt(globalThis?.localStorage?.getItem("musicVolume") || "50") : 50);
+  const [pickSoundVolume, setPickSoundVolume] = useState(globalThis?.localStorage?.getItem("pickSoundVolume") ? parseInt(globalThis?.localStorage?.getItem("pickSoundVolume") || "50") : 50);
 
   const settingVolume = (volume: number, track: 'sound' | 'music' | 'pickSound') => {
     if (track === 'sound') setSoundVolume(volume);

@@ -10,9 +10,18 @@ export function setVolume(v: {
   musicVolume?: number;
   pickSoundVolume?: number;
 }) {
-  if (_soundAudio && v.soundVolume !== undefined) _soundAudio.volume = v.soundVolume / 100;
-  if (_musicAudio && v.musicVolume !== undefined) _musicAudio.volume = v.musicVolume / 100;
-  if (_pickSoundAudio && v.pickSoundVolume !== undefined) _pickSoundAudio.volume = v.pickSoundVolume / 100;
+  if (_soundAudio && v.soundVolume !== undefined) {
+    _soundAudio.volume = v.soundVolume / 100;
+    localStorage.setItem('soundVolume', v.soundVolume.toString());
+  }
+  if (_musicAudio && v.musicVolume !== undefined) {
+    _musicAudio.volume = v.musicVolume / 100;
+    localStorage.setItem('musicVolume', v.musicVolume.toString());
+  }
+  if (_pickSoundAudio && v.pickSoundVolume !== undefined) {
+    _pickSoundAudio.volume = v.pickSoundVolume / 100;
+    localStorage.setItem('pickSoundVolume', v.pickSoundVolume.toString());
+  }
 }
 
 function getOrLazyInitAudio(track: 'sound' | 'music' | 'pickSound') {
