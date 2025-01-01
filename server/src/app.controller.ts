@@ -1,13 +1,46 @@
-import { Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import * as rooms from './rooms';
-import { LeagueGameEogData, RankingDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
+import { LeagueGameEogData, RankingDTO, RoomInListDTO, UserGameSummaryDTO, ServerInfo, NegotiateResponse, NegotiateRequest, ServerInfoBanner } from '@shared/contract';
 import { PrismaService } from './prisma.service';
+import * as fs from 'fs/promises'
+
 
 const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
 
 @Controller()
 export class AppController {
   constructor(private readonly db: PrismaService) { }
+
+  @Post('negotiate')
+  async negotiate(@Body() req: NegotiateRequest): Promise<NegotiateResponse> {
+    // open files in assets/banners
+    const files = await fs.readdir('./assets/banners');
+    const banners: ServerInfoBanner[] = [];
+
+    for (const file of files) {
+      if (file.endsWith(".jpg") || file.endsWith(".png")) {
+        const base64start = `data:image/${file.endsWith(".jpg") ? "jpeg" : "png"};base64,`
+        const buffer = await fs.readFile(`./assets/banners/${file}`);
+        banners.push({
+          type: 'image',
+          url: base64start + buffer.toString('base64'),
+          time: 10000
+        })
+      }
+    }
+
+    const serverInfo: ServerInfo = {
+      banners: [
+        ...banners,
+        { type: 'video', url: '/images/default-banner.webm' }
+      ]
+    };
+
+    if (req.version === "0.4.0") {
+      return { serverInfo, ok: true }
+    }
+    return { serverInfo, ok: false, message: "当前版本不支持，请更新到 0.4.0 以上版本" }
+  }
 
   @Get('rooms')
   getRooms(): RoomInListDTO[] {
@@ -16,6 +49,7 @@ export class AppController {
       name: room.name,
       status: room.status,
       playerNumber: room.users.filter((u) => u !== null).length,
+      hasPassword: !!room.password
     }));
   }
 

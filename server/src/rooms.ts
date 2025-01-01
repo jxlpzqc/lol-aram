@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Socket } from 'socket.io';
 
 import type { GameDataDTO, RoomDTO, RoomStatus, UserDTO } from '@shared/contract';
+import { EventEmitter } from 'node:events';
 
 export type RoomGameData = {
   blueTeamAvailableChampions: number[];
@@ -26,7 +27,8 @@ export type RoomInfo = {
   status: RoomStatus;
   users: (UserAndSocket | null)[];
   roomGameDatas?: RoomGameData;
-  needStop?: boolean;
+  needStop: EventEmitter;
+  password?: string;
 };
 
 const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
@@ -40,13 +42,15 @@ function generateID(): string {
 const MAX_SEATS = 10;
 const MAX_RANDOM = 2;
 
-function createRoom(opts: RoomCreateOptions, user: UserInfo, socket: Socket): RoomInfo {
+function createRoom(opts: RoomCreateOptions, user: UserInfo, socket: Socket, password: string): RoomInfo {
   const room: RoomInfo = {
     id: generateID(),
     name: opts.name,
     waitingTime: opts.waitingTime,
     status: 'waiting',
     users: new Array(MAX_SEATS).fill(null),
+    needStop: new EventEmitter(),
+    password
   };
   rooms.push(room);
   return room;
@@ -102,19 +106,25 @@ export function joinRoom(
   user: UserInfo,
   socket: Socket,
   roomCreateOptions?: RoomCreateOptions,
+  password?: string
 ): string {
   let room = getRoom(roomID);
   if (room) {
     if (room.users.find((u) => u?.user.id === user.id)) {
       throw new Error('User already in room');
     }
+    if (room.password && room.password !== password) {
+      throw new Error('Invalid password');
+    }
   } else {
     if (!roomCreateOptions.name)
       throw new Error('Name must be provided when creating a new room');
     if (roomCreateOptions.waitingTime < 5 || roomCreateOptions.waitingTime > 300)
       throw new Error('Waiting time must be between 5 and 300 seconds');
+    if (password.length > 10)
+      throw new Error('Password must be less than 10 characters');
 
-    room = createRoom(roomCreateOptions, user, socket);
+    room = createRoom(roomCreateOptions, user, socket, password);
   }
 
   if (room.status !== 'waiting') {
@@ -138,7 +148,7 @@ export function quitRoom(roomID: string, userid: string) {
 
     if (room.status !== 'waiting') {
       // throw new Error('Cannot quit room when game is in progress');
-      room.needStop = true;
+      room.needStop.emit('stop');
     }
 
     room.users[room.users.findIndex((u) => u?.user.id === userid)] = null;
@@ -281,7 +291,7 @@ export function autoArrangeRoom(room: RoomInfo) {
 
   const combination = new Array(Math.floor(users.length / 2)).fill(0).map((_, i) => i);
   let result: number[];
-  let notBestResults: number[][];
+  let notBestResults: number[][] = [];
 
   const getDifference = () => {
     const blueTeam = combination.reduce((x, c) => (x + (users[c].user.autoArrangeRankScore || 0)), 0);

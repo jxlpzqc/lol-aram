@@ -30,6 +30,7 @@ export type RoomInListDTO = {
   name: string;
   status: RoomStatus;
   playerNumber: number;
+  hasPassword: boolean;
 };
 
 export type CreateRoomRequest = {
@@ -255,4 +256,25 @@ export type UserGameSummaryDTO = {
   playerData: LeagueGameEogPlayer;
   isWin: boolean;
   scoreDelta: number;
+}
+
+export type ServerInfoBanner = {
+  type: 'video' | 'image';
+  time?: number;
+  url: string;
+}
+
+export type ServerInfo = {
+  banners?: ServerInfoBanner[];
+  notifications?: string
+}
+
+export type NegotiateRequest = {
+  version: string;
+}
+
+export type NegotiateResponse = {
+  ok: boolean;
+  message?: string;
+  serverInfo: ServerInfo;
 }
