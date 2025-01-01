@@ -52,6 +52,7 @@ function createRoom(opts: RoomCreateOptions, user: UserInfo, socket: Socket, pas
     needStop: new EventEmitter(),
     password
   };
+  room.needStop.setMaxListeners(30);
   rooms.push(room);
   return room;
 }
