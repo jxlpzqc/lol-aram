@@ -2,6 +2,7 @@
 import React from "react"
 import LeagueButtonGroup from "./LeagueButtonGroup"
 import { useRouter } from "next/navigation";
+import clsx from "clsx";
 
 type Props = {
   title: React.ReactNode,
@@ -10,34 +11,47 @@ type Props = {
   confirmText?: string,
   showBack?: boolean,
   onConfirm?: () => void,
-  onCancel?: () => void
+  onCancel?: () => void,
+  inNavPage?: boolean,
 }
 
-const BackIcon = ({ onClick }: {
-  onClick?: () => void
-}) => (<svg onClick={onClick} className="inline-block w-5 h-5 mr-2 hover:brightness-150" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4390" width="200" height="200"><path d="M711.841477 976.738462l88.300308-86.171569L404.393354 513.969231 800.141785 137.371569 711.841477 51.2 227.796677 513.969231 711.841477 976.738462z" fill="#b19f71" p-id="4391"></path></svg>);
+const BackIcon = ({ onClick, inNavPage }: {
+  onClick?: () => void,
+  inNavPage?: boolean,
+}) => (
+  <button className={clsx(`bg-[url('/images/button-back-arrow.png')]
+  hover:bg-[url('/images/button-back-arrow-over.png')]
+  active:bg-[url('/images/button-back-arrow-down.png')]
+  disabled:bg-[url('/images/button-back-arrow-disabled.png')]
+  bg-no-repeat bg-center bg-contain w-10 h-10 text-transparent`, {
+    "w-8 h-8": inNavPage
+  })} onClick={onClick} >
+  </button>
+);
 
 export default function (props: React.PropsWithChildren<Props>) {
   const router = useRouter();
 
-  return <div className="h-screen p-8">
+  return <div className={clsx(!props.inNavPage ? "h-screen" : "h-full")}>
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-sans font-bold">
-          {props.showBack && <BackIcon onClick={props.onCancel || (() => {
+      <div className="flex p-8 justify-between items-center">
+        <h1 className={clsx(!props.inNavPage ? "text-3xl" : "text-lg", "font-sans font-bold flex items-center")}>
+          {props.showBack && <BackIcon inNavPage={props.inNavPage} onClick={props.onCancel || (() => {
             router.back();
           })} />}
 
-          <img src='/images/rift.png' className="w-10 h-10 inline-block mr-4" />
+          <img src='/images/rift.png' className={clsx("w-10 h-10 inline-block mr-4", { "w-8 h-8": props.inNavPage })} />
           {props.title}
         </h1>
+        <div className="text-sm">
         {props.titleToolButtons}
+        </div>
       </div>
-      <div className="my-8 grow overflow-y-auto *:my-2">
+      <div className="px-8 grow overflow-y-auto">
         {props.children}
       </div>
       {
-        props.showButton && <div className="flex justify-center">
+        props.showButton && <div className="flex justify-center p-8">
           <LeagueButtonGroup
             text={props.confirmText || "确定"}
             onConfirm={props.onConfirm}

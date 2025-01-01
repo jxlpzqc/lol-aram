@@ -1,9 +1,24 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
+import { CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, NegotiateResponse, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
 import leagueHandler from "./league";
-import { v4 } from "uuid";
+import { v4, v4 as uuidv4 } from 'uuid';
 import sessionService from "./session";
+import championList from '@renderer/public/assets/champions.json';
+
+export async function negotiateWithServer(server: string, version: string) {
+  const ret = await fetch("http://" + server + "/negotiate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      version,
+    }),
+  });
+  const data = await ret.json();
+  return data as NegotiateResponse;
+}
 
 export async function getAllRooms(): Promise<RoomInListDTO[]> {
   const ret = await fetch("http://" + session.server + "/rooms")
@@ -29,166 +44,424 @@ export async function getGameEog(gameid: string): Promise<LeagueGameEogData> {
   return data as LeagueGameEogData;
 }
 
-export type RoomSocketOpts = {
-  roomID: string
-  roomName: string,
-  waitingTime: number,
-  championList: number[],
+type RoomUserOpts = {
   userID: string,
   userName: string,
   userGameID: string,
-  onRoom?: (data: RoomDTO) => void,
-  onConnect?: () => void,
-  onDisconnect?: (reason: string) => void,
-  onTime?: (data: { time: number }) => void
+  championList: number[],
 }
 
-export function getRoomSocket({
-  roomID, roomName, waitingTime, userID, championList,
-  userName, userGameID, onDisconnect, onRoom, onTime,
-  onConnect
-}: RoomSocketOpts): Socket {
-
-  const socket = io(`ws://${session.server}/room`, {
-    query: {
-      roomID,
-      id: userID,
-      name: userName,
-      gameID: userGameID,
-      // used for creating room
-      roomName,
-      waitingTime,
-      champions: championList
-    },
-    timeout: 10000
-  });
-  socket.on("connect", () => {
-    console.log("connected");
-    onConnect?.();
-  });
-
-  socket.on('connect_error', (error) => {
-    console.log("connect_error", error);
-    onDisconnect?.(error.message);
-  });
-
-  socket.on("disconnect", (data) => {
-    console.log("disconnected");
-    onDisconnect?.(data);
-  });
-
-  socket.on("roomUpdated", (data) => {
-    console.log("room", data);
-    onRoom?.(data);
-  });
-
-  socket.on("time", (data) => {
-    console.log("time", data);
-    onTime?.(data);
-  });
-
-  socket.connect();
-
-  return socket;
-
+type CreateRoomOpts = {
+  roomName: string,
+  password: string,
+  waitingTime: number,
 }
 
-export async function changeSeat(socket: Socket, seat: number) {
-  await socket.emitWithAck("changeSeat", { seat });
+type JoinRoomOpts = {
+  roomID: string,
+  password: string,
 }
 
-export async function startGame(socket: Socket) {
-  await socket.emitWithAck("play");
+export type ConnectRoomOpts = ({
+  type: "create",
+} & CreateRoomOpts & RoomUserOpts) | ({
+  type: "join",
+} & JoinRoomOpts & RoomUserOpts);
+
+type Listener<T extends Event> = (event: T) => void;
+
+class DisconnectEvent extends Event {
+  constructor(public reason: string) { super("disconnect"); }
 }
 
-export async function executeGame(
-  roomInfo: RoomDTO,
-  socket: Socket,
-  updateProgress?: (data: ProgressDTO[]) => void
-): Promise<RoomDTO> {
-  let processes: ProgressDTO[] = [];
+class RoomUpdatedEvent extends Event {
+  constructor(public data: RoomDTO) { super("roomUpdated"); }
+}
 
-  function emitResult(_event: any, data: any) {
-    console.log("end-of-game", data);
-    socket.emit("end-of-game", data);
+class TimeEvent extends Event {
+  constructor(public time: number) { super("time"); }
+}
+class ProgressEvent extends Event {
+  constructor(public data: ProgressDTO[]) { super("progressUpdated"); }
+}
+
+export type NeedManualOperationOpts = {
+  type: "createRoom",
+  roomName: string,
+  password: string,
+  team: "blue" | "red",
+} | {
+  type: "joinRoom",
+  roomName: string,
+  password: string,
+  team: "blue" | "red",
+} | {
+  type: "startGame"
+} | {
+  type: "pick",
+  champion: number,
+};
+
+class NeedManualOperationEvent extends Event {
+  constructor(public data: NeedManualOperationOpts) { super("needManualOperation"); }
+}
+
+class ManualOperationResultEvent extends Event {
+  constructor(public success: boolean) { super("manualOperationResult"); }
+}
+
+export class RoomSocket {
+  private socketEvents = new EventTarget()
+
+  latestRoomInfo: RoomDTO | null = null;
+
+  keepInScreenRoomInfo: RoomDTO | null = null;
+
+  constructor(private socket: Socket) {
+
+    this.socket.on("connect", () => {
+      this.socketEvents.dispatchEvent(new Event("connect"));
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.log("connect_error", error);
+      this.socketEvents.dispatchEvent(new DisconnectEvent(error.message));
+    });
+
+    this.socket.on("disconnect", (data) => {
+      console.log("disconnected");
+      this.socketEvents.dispatchEvent(new DisconnectEvent(data));
+      disconnectFromRoom();
+    });
+
+    this.socket.on("roomUpdated", (data: RoomDTO) => {
+      console.log("[DEBUG] room is updated", data);
+      if (data.status === "executing" || data.status === "playing") {
+        this.socketEvents.dispatchEvent(new Event("needNavigateToRoom"));
+      }
+      if (data.status === "executing") {
+        this.keepInScreenRoomInfo = data;
+        this.executeGame();
+      }
+      this.latestRoomInfo = data;
+      this.socketEvents.dispatchEvent(new RoomUpdatedEvent(data));
+    });
+
+    this.socket.on("time", (data) => {
+      this.socketEvents.dispatchEvent(new TimeEvent(data.time));
+    });
   }
 
-  leagueHandler.addOnEndGameListener(emitResult);
+  get internalSocket() {
+    return this.socket;
+  }
 
-  const handleProgress = (data: ProgressDTO) => {
-    let idx = processes.findIndex((p) => p.id === data.id);
-    if (idx !== -1) {
-      processes[idx] = data;
-    } else {
-      processes.push(data);
+  addEventListener(event: "disconnect", listener: Listener<DisconnectEvent>): void;
+  addEventListener(event: "connect", listener: Listener<Event>): void;
+  addEventListener(event: "roomUpdated", listener: Listener<RoomUpdatedEvent>): void;
+  addEventListener(event: "time", listener: Listener<TimeEvent>): void;
+  addEventListener(event: "progressUpdated", listener: Listener<ProgressEvent>): void;
+  addEventListener(event: "needManualOperation", listener: Listener<NeedManualOperationEvent>): void;
+  addEventListener(event: "manualOperationResult", listener: Listener<ManualOperationResultEvent>): void;
+  addEventListener(event: "needNavigateToRoom", listener: Listener<Event>): void;
+  addEventListener(event: any, listener: any) {
+    this.socketEvents.addEventListener(event, listener);
+  }
+
+  removeEventListener(event: "disconnect", listener: Listener<DisconnectEvent>): void;
+  removeEventListener(event: "connect", listener: Listener<Event>): void;
+  removeEventListener(event: "roomUpdated", listener: Listener<RoomUpdatedEvent>): void;
+  removeEventListener(event: "time", listener: Listener<TimeEvent>): void;
+  removeEventListener(event: "progressUpdated", listener: Listener<ProgressEvent>): void;
+  removeEventListener(event: "needManualOperation", listener: Listener<NeedManualOperationEvent>): void;
+  removeEventListener(event: "manualOperationResult", listener: Listener<ManualOperationResultEvent>): void;
+  removeEventListener(event: "needNavigateToRoom", listener: Listener<Event>): void;
+  removeEventListener(event: any, listener: any) {
+    this.socketEvents.removeEventListener(event, listener);
+  }
+
+  async changeSeat(seat: number) {
+    await this.socket.emitWithAck("changeSeat", { seat });
+  }
+
+  async startGame() {
+    await this.socket.emitWithAck("play");
+  }
+
+  async autoArrange() {
+    await this.socket.emitWithAck("autoarrange");
+  }
+
+  async endGame() {
+    await this.socket.emitWithAck("end");
+  }
+
+  async pickChampion(champion: number) {
+    await this.socket.emitWithAck("pick", { champion });
+  }
+
+  async randomChampion() {
+    await this.socket.emitWithAck("random");
+  }
+
+  sendManualOperationResult(success: boolean) {
+    this.socketEvents.dispatchEvent(new ManualOperationResultEvent(success));
+  }
+
+  private progressList: ProgressDTO[] = [];
+
+  get progress() {
+    return this.progressList as ReadonlyArray<ProgressDTO>;
+  }
+
+  private emitUpdateProgress() {
+    this.socketEvents.dispatchEvent(new ProgressEvent(this.progressList));
+  }
+
+  private emitNeedManualOperation(data: NeedManualOperationOpts) {
+    this.socketEvents.dispatchEvent(new NeedManualOperationEvent(data));
+  }
+
+  private async executeGame(): Promise<RoomDTO> {
+    const TIMEOUT = 10000;
+    const RETRY_TIMES = 3;
+
+    if (this.latestRoomInfo === null) {
+      throw new Error("No room info");
     }
-    updateProgress?.([...processes]);
-  }
-  socket.on("executeProgress", handleProgress);
 
-  const createHandler = (event: string, realHandler: (arg: any) => any | Promise<any>) => {
-    return async (arg: any) => {
-      try {
-        const ret = await realHandler(arg);
-        console.log("emit", event + ":success", ret);
-        await socket.emitWithAck(event + ":success", ret);
-      } catch (e) {
-        console.log("emit", event + ":fail", e?.toString());
-        await socket.emitWithAck(event + ":fail", e?.toString());
+    this.progressList = [];
+    this.emitUpdateProgress();
+
+    const socket = this.socket;
+
+    const handleEndGame = (_event: any, data: any) => {
+      console.log("end-of-game", data);
+      socket.emit("end-of-game", data);
+    }
+
+    leagueHandler.addOnEndGameListener(handleEndGame);
+
+    const handleProgress = (data: ProgressDTO) => {
+      let idx = this.progressList.findIndex((p) => p.id === data.id);
+      if (idx !== -1) {
+        this.progressList[idx] = data;
+      } else {
+        this.progressList.push(data);
+      }
+      this.emitUpdateProgress();
+    }
+
+    socket.on("executeProgress", handleProgress);
+
+    const createHandler = (event: string, realHandler: (arg: any) => any | Promise<any>) => {
+      return async (arg: any) => {
+        try {
+          const ret = await realHandler(arg);
+          console.log("emit", event + ":success", ret);
+          await socket.emitWithAck(event + ":success", ret);
+        } catch (e) {
+          console.log("emit", event + ":fail", e?.toString());
+          await socket.emitWithAck(event + ":fail", e?.toString());
+        }
       }
     }
+
+    const createRealHandler = <P = void, Ret = void, S1 = P, S2 = S1>({
+      doing,
+      getManualOpts,
+      getReturnValue = (p, s1, s2) => s1 as never as Ret,
+      prepare = (props) => props as never as S1,
+    }: {
+      doing: (p: P, s1: S1) => Promise<S2>,
+      getManualOpts: (p: P, s1: S1) => NeedManualOperationOpts,
+      getReturnValue?: (p: P, s1: S1, s2: S2 | undefined) => Ret,
+      prepare?: (props: P) => S1 | Promise<S1>,
+    }
+    ) => (async (props: P) => {
+      const s1 = await prepare(props);
+      let s2: S2 | undefined = undefined;
+
+      let handled = false;
+      for (let i = 0; i < RETRY_TIMES; i++) {
+        try {
+          s2 = await Promise.race([
+            new Promise<S2>((_, reject) => { setTimeout(reject, TIMEOUT) }),
+            doing(props, s1),
+          ])
+          handled = true;
+          break;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      if (!handled) {
+        this.emitNeedManualOperation(getManualOpts(props, s1));
+
+        await new Promise<void>((resolve, reject) => {
+          const handler = (event: ManualOperationResultEvent) => {
+            this.removeEventListener("manualOperationResult", handler);
+            if (event.success) {
+              resolve();
+            } else {
+              reject(new Error("Manual operation failed or cancelled"));
+            }
+          }
+          this.addEventListener("manualOperationResult", handler);
+        });
+
+      }
+      return getReturnValue(props, s1, s2);
+    });
+
+    const handleCreateRoom = createRealHandler<CreateRoomRequest, JoinRoomRequest, { gameName: string, password: string, team: "blue" | "red" }, void>(
+      {
+        doing: async ({ team }, { gameName, password }) => {
+          await leagueHandler.createNewGame(gameName, password, sessionService.summonerId!, team);
+        },
+        prepare: () => {
+          if (this.latestRoomInfo === null) throw new Error("No room info");
+          const gameName = this.latestRoomInfo.id;
+          const password = v4().replace(/-/g, "").substring(0, 8);
+          const team = this.latestRoomInfo.users.findIndex(x => x?.id == session.sessionID) < 5 ? "blue" : "red";
+          console.log("create room", gameName, password);
+          return { gameName, password, team }
+        },
+        getManualOpts: (_, s1) => ({ type: "createRoom", roomName: s1.gameName, password: s1.password, team: s1.team }),
+        getReturnValue: (_, s1) => ({ roomName: s1.gameName, password: s1.password }),
+      }
+    );
+
+    const createRoomHandler = createHandler("createRoom", handleCreateRoom);
+    socket.on("createRoom", createRoomHandler);
+
+    const handleJoinRoom = createRealHandler<JoinRoomRequest, void, void>(
+      {
+        doing: async ({ roomName, password, team }) => {
+          await leagueHandler.joinGame(roomName, password, sessionService.summonerId!, team);
+        },
+        getManualOpts: ({ roomName, password, team }) => ({ type: "joinRoom", roomName, password, team: team || "blue" }),
+      }
+    )
+
+    const joinRoomHandler = createHandler("joinRoom", handleJoinRoom);
+    socket.on("joinRoom", joinRoomHandler);
+
+    const handleStartGame = createRealHandler(
+      {
+        doing: async () => {
+          await leagueHandler.startGame();
+        },
+        getManualOpts: () => ({ type: "startGame" }),
+      }
+    )
+
+    const startGameHandler = createHandler("startGame", handleStartGame);
+    socket.on("startGame", startGameHandler);
+
+    const handlePick = createRealHandler<void, void, number, void>({
+      doing: async (_, champion) => {
+        await leagueHandler.selectChampion(champion);
+      },
+      getManualOpts: (_, champion) => ({ type: "pick", champion }),
+      prepare: () => {
+        if (!this.latestRoomInfo) throw new Error("No room info");
+        const currentUser = this.latestRoomInfo.users.find(x => x?.id == session.sessionID);
+        const champion = currentUser?.gameData?.champion;
+        if (!champion) throw new Error("Could not get champion");
+        return champion;
+      }
+    })
+
+    const pickHandler = createHandler("pick", handlePick);
+    socket.on("pick", pickHandler);
+
+    socket.emit("prepareExecute");
+
+    const ret = await new Promise<RoomDTO>((resolve, _reject) => {
+      socket.once("finish", resolve);
+    });
+
+    leagueHandler.removeOnEndGameListener(handleEndGame);
+    socket.off("executeProgress", handleProgress);
+    socket.off("createRoom", createRoomHandler);
+    socket.off("joinRoom", joinRoomHandler);
+    socket.off("startGame", startGameHandler);
+    socket.off("pick", pickHandler);
+
+    return ret;
   }
+}
 
-  const handleCreateRoom = async ({ team }: CreateRoomRequest) => {
-    const gameName = roomInfo.id;
-    const password = v4();
-    console.log("create room", gameName, password);
+let socket: RoomSocket | null = null;
+const socketChangeEvents = new EventTarget();
 
-    await leagueHandler.createNewGame(gameName, password, sessionService.summonerId!, team);
+export function addRoomSocketChangeListener(listener: Listener<Event>): void {
+  socketChangeEvents.addEventListener("change", listener);
+}
 
-    return {
-      roomName: gameName,
-      password
-    } as JoinRoomRequest;
+export function removeRoomSocketChangeListener(listener: Listener<Event>): void {
+  socketChangeEvents.removeEventListener("change", listener);
+}
+
+export function getRoomSocket() {
+  return socket;
+}
+
+export function connectToRoom(opts: ConnectRoomOpts): RoomSocket {
+  if (socket) {
+    socket.internalSocket.disconnect();
+    socket = null;
   }
+  socket = new RoomSocket(io(`ws://${session.server}/room`, {
+    query: opts.type === "join" ? {
+      roomID: opts.roomID,
+      id: opts.userID,
+      password: opts.password,
+      name: opts.userName,
+      gameID: opts.userGameID,
+      champions: opts.championList
+    } : {
+      roomName: opts.roomName,
+      id: opts.userID,
+      waitingTime: opts.waitingTime,
+      password: opts.password,
+      name: opts.userName,
+      gameID: opts.userGameID,
+      champions: opts.championList
+    },
+    timeout: 10000,
+  }));
 
-  const createRoomHandler = createHandler("createRoom", handleCreateRoom);
-  socket.on("createRoom", createRoomHandler);
+  socketChangeEvents.dispatchEvent(new Event("change"));
+  return socket;
+}
 
-  const handleJoinRoom = async ({ roomName, password, team }: JoinRoomRequest) => {
-    await leagueHandler.joinGame(roomName, password, sessionService.summonerId!, team);
-  }
-
-  const joinRoomHandler = createHandler("joinRoom", handleJoinRoom);
-  socket.on("joinRoom", joinRoomHandler);
-
-  const handleStartGame = async () => {
-    await leagueHandler.startGame();
-  }
-  const startGameHandler = createHandler("startGame", handleStartGame);
-  socket.on("startGame", startGameHandler);
-
-  const handlePick = async () => {
-    const currentUser = roomInfo.users.find(x => x?.id == session.sessionID);
-    const champion = currentUser?.gameData?.champion;
-    if (!champion) throw new Error("Could not get champion");
-    await leagueHandler.selectChampion(champion);
-  }
-  const pickHandler = createHandler("pick", handlePick);
-  socket.on("pick", pickHandler);
-
-  socket.emit("prepareExecute");
-
-  const ret = await new Promise<RoomDTO>((resolve, _reject) => {
-    socket.once("finish", resolve);
+export function connectToRoomAndWait(opts: ConnectRoomOpts): Promise<RoomSocket> {
+  return new Promise((resolve, reject) => {
+    const socket = connectToRoom(opts);
+    const onSocketConnect = () => {
+      clearListeners();
+      resolve(socket);
+    }
+    const onSocketDisconnect = (e: DisconnectEvent) => {
+      clearListeners();
+      reject(e.reason);
+    }
+    const clearListeners = () => {
+      socket.removeEventListener("connect", onSocketConnect);
+      socket.removeEventListener("disconnect", onSocketDisconnect);
+    }
+    socket.addEventListener("connect", onSocketConnect);
+    socket.addEventListener("disconnect", onSocketDisconnect);
   });
+}
 
-  leagueHandler.removeOnEndGameListener(emitResult);
-  socket.off("executeProgress", handleProgress);
-  socket.off("createRoom", createRoomHandler);
-  socket.off("joinRoom", joinRoomHandler);
-  socket.off("startGame", startGameHandler);
-  socket.off("pick", pickHandler);
-
-  return ret;
+export function disconnectFromRoom() {
+  if (socket) {
+    socket.internalSocket.disconnect();
+    socket = null;
+    socketChangeEvents.dispatchEvent(new Event("change"));
+  }
 }

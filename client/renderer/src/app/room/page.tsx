@@ -1,9 +1,8 @@
 "use client"
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
-import RoomWaiting from './components/RoomWaiting';
-import { changeSeat, executeGame, getRoomSocket, startGame } from '../../services/room';
+import { addRoomSocketChangeListener, getRoomSocket, NeedManualOperationOpts, removeRoomSocketChangeListener } from '../../services/room';
 import LeagueButtonGroup from '../../components/LeagueButtonGroup';
 import ChampionPick from './components/ChampionPick';
 import { RoomDTO, UserDTO, ProgressDTO } from '@shared/contract';
@@ -12,169 +11,167 @@ import FailPage from '../../components/FailPage';
 import LoadingPage from '../../components/LoadingPage';
 import GameExecutor from './components/GameExecutor';
 import leagueHandler from '../../services/league';
-
-function Connecting() {
-  return <LoadingPage message='正在连接房间...' />;
-}
-
-function ConnectionFailed({ connectionFailedReason }: { connectionFailedReason: string }) {
-  const router = useRouter();
-  return <FailPage buttonTitle='返回' reason={"连接失败：" + connectionFailedReason} onButtonClick={
-    () => { router.back() }} />;
-}
+import LeagueModal from '../../components/LeagueModal';
+import { GlobalContext } from '../context';
+import { CreateRoomManualOperation, JoinRoomManualOperation, PickChampionManualOperation, StartGameManualOperation } from './components/ManualOperations';
+import { pauseSound, playSound } from '../../services/sound';
 
 export default function Room() {
-  const params = useSearchParams();
   const router = useRouter();
+  const { socket, notify } = useContext(GlobalContext);
 
-  const [connectionStatus, setConnectionStatus] = useState(0);
-  const [connectionFailedReason, setConnectionFailedReason] = useState('');
+  const [manualOperation, setManualOperation] = useState<NeedManualOperationOpts>();
 
-  const [seats, setSeats] = useState<(UserDTO | null)[]>([]);
-  const [remaingTime, setRemainingTime] = useState(-1);
-  const [totalTime, setTotalTime] = useState(-1);
+  const [roomInfo, setRoomInfo] = useState<RoomDTO | null>(socket?.latestRoomInfo || null);
+  const [remaingTime, setRemainingTime] = useState(socket?.latestRoomInfo?.totalTime || 60);
   const [availableChampions, setAvailableChampions] = useState<number[]>([]);
-  const [diceNumber, setDiceNumber] = useState(0);
-
   const [progress, setProgress] = useState<ProgressDTO[]>([]);
 
-  const roomInfo = useRef<RoomDTO | null>(null);
+  const diceNumber = roomInfo?.users?.find((u) => u?.id === sessionService.sessionID)?.gameData?.remainRandom || 0;
+
   // 0: waiting 1: playing 2: executing 3: finished
-  const [status, setStatus] = useState<number>(0);
-
-  const finishedSeats = useRef<(UserDTO | null)[]>([]);
-
-  const socket = useRef<Socket | null>(null);
-
-  const connectToRoom = async () => {
-    let championList: number[] | undefined;
-    try {
-      championList = await leagueHandler.getOwnedChampions(sessionService.summonerId!);
-    } catch (e) {
-      setConnectionFailedReason("无法从客户端获取英雄列表");
-      return;
-    }
-
-    socket.current = getRoomSocket({
-      roomID: params.get('roomid') || '',
-      roomName: params.get('newRoomName') || '',
-      waitingTime: parseInt(params.get('waitingTime') || '60'),
-      userID: sessionService.sessionID!,
-      userGameID: sessionService.summonerName!,
-      championList: championList || [],
-      userName: sessionService.realName!,
-      onRoom: (data) => {
-        router.replace(`/room?roomid=${data.id}`);
-        setSeats(data.users || []);
-
-        roomInfo.current = data;
-
-        setTotalTime(data.totalTime);
-
-        setStatus(status => {
-          // if status == 3 and data is waiting, keep screen in finish screen;
-          if (status !== 3 || data.status !== 'waiting') {
-            if (data.status === 'waiting') return 0;
-            else if (data.status === 'playing') return 1;
-            else if (data.status === 'executing') {
-              (async () => {
-                if (!socket.current) return;
-                finishedSeats.current = (await executeGame(data, socket.current, (x) => {
-                  console.log("update progress", x);
-                  setProgress(x);
-                })).users;
-                setStatus(3);
-              })();
-              return 2;
-            }
-          }
-          return status;
-        });
-
-        setAvailableChampions(data.avaliableChampions);
-        const self = data.users?.find((u) => u?.id === sessionService.sessionID);
-        if (self) {
-          setDiceNumber(self.gameData?.remainRandom || 0);
-        }
-      },
-      onTime: ({ time }) => {
-        setRemainingTime(time);
-      },
-      onDisconnect: (reason) => {
-        setConnectionStatus(2);
-        setConnectionFailedReason(reason);
-      },
-      onConnect: () => {
-        setConnectionStatus(1);
-      }
-    })
-  };
+  const [status, setStatus] = useState<number>(
+    roomInfo?.status === 'waiting' ? 0 :
+      roomInfo?.status === 'playing' ? 1 : 2
+  );
 
   useEffect(() => {
-    console.log("use effect");
-    connectToRoom();
-    return () => {
-      socket.current?.disconnect();
-      setTimeout(() => {
-        socket.current?.disconnect();
-      }, 5000);
+    if (status === 0) {
+      router.back();
     }
+  }, [status]);
+
+  useEffect(() => {
+    playSound('/sounds/music-cs-allrandom-howlingabyss.ogg', 'music');
+
+    return () => {
+      pauseSound('music');
+      pauseSound('pickSound')
+    };
   }, []);
 
+  useEffect(() => {
+    const onProgressUpdated = (e: { data: ProgressDTO[] }) => {
+      setProgress([...e.data]);
+    }
+    const onRoomUpdated = (e: { data: RoomDTO }) => {
+      const data = e.data;
+      setStatus(status => {
+        // if executing || finished -> waiting, keep screen in finish screen;
+        if ((status === 2 || status === 3) && data.status === 'waiting') return 3;
+
+        if (data.status === 'waiting') return 0;
+        else if (data.status === 'playing') return 1;
+        else if (data.status === 'executing') {
+          pauseSound('music');
+          return 2;
+        }
+        else return status;
+      });
+      setRoomInfo(data);
+      setAvailableChampions(data.avaliableChampions);
+    };
+    const onTime = (e: { time: number }) => {
+      setRemainingTime(e.time);
+      if (e.time <= 10) {
+        playSound('/sounds/sfx-cs-timer-tick-small.ogg', 'sound');
+      }
+    }
+    const onDisconnect = (e: { reason: string }) => {
+      notify?.open({
+        content: "连接断开：" + e.reason,
+      });
+      router.back();
+    }
+
+    const onManualOperation = (e: { data: NeedManualOperationOpts }) => {
+      setManualOperation(e.data);
+    }
+
+    socket?.addEventListener("progressUpdated", onProgressUpdated);
+    socket?.addEventListener("roomUpdated", onRoomUpdated);
+    socket?.addEventListener("time", onTime);
+    socket?.addEventListener("disconnect", onDisconnect);
+    socket?.addEventListener("needManualOperation", onManualOperation)
+
+    return () => {
+      socket?.removeEventListener("progressUpdated", onProgressUpdated);
+      socket?.removeEventListener("roomUpdated", onRoomUpdated);
+      socket?.removeEventListener("time", onTime);
+      socket?.removeEventListener("disconnect", onDisconnect);
+      socket?.removeEventListener("needManualOperation", onManualOperation);
+    };
+
+  }, [socket]);
+
   const onReplay = () => {
-    const data = roomInfo.current;
-    if (!data) return;
-    if (data.status === 'waiting') setStatus(0);
-    else if (data.status === 'playing') setStatus(1);
-    else if (data.status === 'executing') setStatus(2);
+    router.back();
   };
 
-  if (connectionStatus === 0) {
-    return <Connecting />;
-  } else if (connectionStatus === 2) {
-    return <ConnectionFailed connectionFailedReason={connectionFailedReason} />;
-  } else {
-    if (status === 0) {
-      return <RoomWaiting roomName={roomInfo.current?.name || "未知房间"}
-        time={roomInfo.current?.totalTime || 60}
-        seats={seats} onJoin={async (x) => {
-          if (socket.current)
-            await changeSeat(socket.current, x);
-        }} onStartGame={async () => {
-          if (socket.current)
-            await startGame(socket.current);
-        }} onAutoArrange={() => {
-          socket.current?.emit('autoarrange');
-        }} onQuit={() => {
-          router.replace('/');
-        }} />
-    } else if (status === 1 || status === 2 || status === 3) {
-      return <div className='h-screen w-screen'>
-
-        <ChampionPick
-          totalTime={totalTime}
-          seats={status !== 3 ? seats : finishedSeats.current}
-          remainingTime={remaingTime}
-          finished={status !== 1}
-          availableChampions={availableChampions} diceNumber={diceNumber} onRandom={async () => {
-            socket.current?.emit('random');
-          }} onChange={async (championID) => {
-            socket.current?.emit('pick', { champion: championID });
-          }} onEnd={async () => {
-            socket.current?.emit('end');
-          }}
-        />
-        {status !== 1 && <div className=' bg-[#000000aa] fixed w-full h-full left-0 top-0 flex justify-center items-center'>
-          <div className='w-1/2 h-2/3 bg-[#010a13] border-[#463714] border-2 border-solid'>
-            <GameExecutor finished={status === 3} progress={progress} seats={seats}
-              onReplay={onReplay}
-              onEnd={() => {
-                socket.current?.emit('end');
-              }} />
-          </div>
-        </div>}
-      </div>
-    }
+  if (!roomInfo) {
+    return <FailPage reason='无房间信息' buttonTitle='返回' onButtonClick={() => {
+      router.back();
+    }} />;
   }
 
+  let manualOperationModal = null;
+  const onManualOk = () => {
+    socket?.sendManualOperationResult(true);
+    setManualOperation(undefined);
+  };
+  const onManualCancel = () => {
+    socket?.sendManualOperationResult(false);
+    setManualOperation(undefined);
+  };
+
+  const modalGenericProps = {
+    onOk: onManualOk,
+    onCancel: onManualCancel,
+  };
+
+  if (manualOperation?.type === 'createRoom') {
+    manualOperationModal = <LeagueModal width={600} zIndex={102} open={manualOperation?.type === 'createRoom'} canClose={false}>
+      <CreateRoomManualOperation roomName={manualOperation.roomName} password={manualOperation.password} team={manualOperation.team} {...modalGenericProps} />
+    </LeagueModal>;
+  } else if (manualOperation?.type === 'joinRoom') {
+    manualOperationModal = <LeagueModal width={600} zIndex={102} open canClose={false}>
+      <JoinRoomManualOperation roomName={manualOperation.roomName} password={manualOperation.password} team={manualOperation.team} {...modalGenericProps} />
+    </LeagueModal>
+  } else if (manualOperation?.type === 'startGame') {
+    manualOperationModal = <LeagueModal width={400} zIndex={102} open canClose={false}>
+      <StartGameManualOperation {...modalGenericProps} />
+    </LeagueModal>
+  } else if (manualOperation?.type === 'pick') {
+    manualOperationModal = <LeagueModal width={400} zIndex={102} open canClose={false}>
+      <PickChampionManualOperation champion={manualOperation.champion} {...modalGenericProps} />
+    </LeagueModal>
+  }
+
+
+
+  return <div className='h-screen w-screen'>
+    <ChampionPick
+      totalTime={roomInfo.totalTime}
+      seats={status !== 3 ? roomInfo.users : socket?.keepInScreenRoomInfo?.users}
+      remainingTime={remaingTime}
+      finished={status !== 1}
+      availableChampions={availableChampions} diceNumber={diceNumber} onRandom={async () => {
+        socket?.randomChampion();
+      }} onChange={async (championID) => {
+        socket?.pickChampion(championID);
+      }} onEnd={async () => {
+        socket?.endGame();
+      }}
+    />
+    {status !== 1 && <LeagueModal open canClose={false}>
+      <GameExecutor finished={roomInfo.status === "waiting"} progress={progress} seats={socket?.keepInScreenRoomInfo?.users || roomInfo.users}
+        onReplay={onReplay}
+        onEnd={() => {
+          socket?.endGame();
+        }} />
+    </LeagueModal>}
+
+    {manualOperationModal}
+  </div>
 }
+

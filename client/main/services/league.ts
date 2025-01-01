@@ -16,35 +16,49 @@ export async function isLeagueRunning() {
 
 let _websocket: LeagueWebSocket | null = null;
 
+const emitWebSocketStatus = (socket: LeagueWebSocket, mainWindow: Electron.BrowserView) => {
+    let status = 'close';
+    if (socket.readyState === LeagueWebSocket.OPEN) {
+        status = 'open';
+    } else if (socket.readyState === LeagueWebSocket.CONNECTING) {
+        status = 'connecting';
+    } else if (socket.readyState === LeagueWebSocket.CLOSED) {
+        status = 'close';
+    }
+    console.log("emitWebSocketStatus", status);
+
+    mainWindow.webContents.send('league:webSocketStatusChanged', status);
+}
+
 export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
     if (_websocket?.readyState == LeagueWebSocket.OPEN) return;
-    if (_websocket?.readyState == LeagueWebSocket.CONNECTING) {
-        await new Promise((resolve) => {
-            _websocket?.addEventListener('open', resolve);
-        });
-        return;
+    if (_websocket?.readyState == LeagueWebSocket.CONNECTING) return;
+
+    if (_websocket) {
+        _websocket.close();
+        _websocket.removeAllListeners();
     }
 
     _websocket = await createWebSocketConnection();
-
-    const reportClose = (e) => {
-        console.error("WebSocket closed");
-        mainWindow.webContents.send('league:webSocketClosed', e);
-    }
-    _websocket.addEventListener('close', reportClose);
-    _websocket.addEventListener('error', reportClose);
+    _websocket.addEventListener('open', () => emitWebSocketStatus(_websocket, mainWindow));
+    _websocket.addEventListener('close', () => emitWebSocketStatus(_websocket, mainWindow));
+    _websocket.addEventListener('error', () => emitWebSocketStatus(_websocket, mainWindow));
 
     _websocket.subscribe("/lol-end-of-game/v1/eog-stats-block", (data, event) => {
         console.log("endOfGame", data);
         mainWindow.webContents.send('league:endOfGame', data);
     });
+    emitWebSocketStatus(_websocket, mainWindow);
+}
 
-    if (_websocket.readyState == LeagueWebSocket.OPEN) return;
-
-    // wait for the connection to be ready
-    await new Promise((resolve) => {
-        _websocket?.addEventListener('open', resolve);
-    });
+export function getWebSocketStatus(): 'open' | 'close' | 'connecting' {
+    if (_websocket?.readyState === LeagueWebSocket.OPEN) {
+        return 'open';
+    } else if (_websocket?.readyState === LeagueWebSocket.CONNECTING) {
+        return 'connecting';
+    } else if (_websocket?.readyState === LeagueWebSocket.CLOSED) {
+        return 'close';
+    }
 }
 
 async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue' | 'red') {
@@ -117,6 +131,8 @@ export async function createNewGame(gameName: string, password: string, summoner
         throw new Error(`创建房间失败！${JSON.stringify(await response.json(), null, 2)}`);
     }
 
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     await ensureSummonerInTeam(credentials, summonerID, team);
 }
 
@@ -164,6 +180,8 @@ export async function joinGame(gameName: string, password: string, summonerID: s
             throw new Error(`加入房间失败！${JSON.stringify(await joinResp.json(), null, 2)}`);
         }
     }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     await ensureSummonerInTeam(credentials, summonerID, team);
 }
@@ -257,5 +275,16 @@ export async function getSummonerInfo(): Promise<{
     return {
         id: d.summonerId,
         name: d.displayName
+    }
+}
+
+export async function restartUI(): Promise<void> {
+    const credentials = await authenticate();
+    const resp = await createHttp1Request({
+        method: 'POST',
+        url: '/riotclient/kill-and-restart-ux',
+    }, credentials);
+    if (!resp.ok) {
+        throw new Error(`重启客户端失败！${JSON.stringify(await resp.json(), null, 2)}`);
     }
 }

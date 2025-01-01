@@ -3,7 +3,9 @@ import {
     createNewGame, getOwnedChampions,
     isLeagueRunning, joinGame, startGame,
     selectChampion, getSummonerInfo,
-    startWebSocket
+    startWebSocket,
+    getWebSocketStatus,
+    restartUI
 } from './league';
 import { ipcMain } from 'electron';
 
@@ -33,6 +35,12 @@ export function registLeagueService(mainWindow: Electron.BrowserWindow) {
     });
     ipcMain.handle('league:startWebSocket', async () => {
         return await startWebSocket(mainWindow);
+    });
+    ipcMain.handle('league:getWebSocketStatus', async () => {
+        return await getWebSocketStatus();
+    });
+    ipcMain.handle('league:restartUI', async () => {
+        return await restartUI();
     });
 }
 

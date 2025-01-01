@@ -1,0 +1,108 @@
+.nav-bar {
+    @apply border-b border-slate-600 flex items-center;
+    -webkit-app-region: drag;
+    height: 80px
+}
+
+.nav-btn {
+    @apply text-lg font-sans font-bold px-4 h-full text-[#e6d4b3] cursor-pointer relative flex flex-col justify-center;
+    -webkit-app-region: no-drag;
+}
+
+.nav-btn-active {
+    background: linear-gradient(to bottom, transparent 30%, #e6d4b333);
+}
+
+/* add to bottom arrow to active nav in the top*/
+.nav-btn-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-top: 12px solid #8c6a2d;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+}
+
+.nav-btn:hover {
+    background: linear-gradient(to bottom, transparent 30%, #e6d4b333);
+    transition: all 0.3s;
+}
+
+/* add bottom blur light to this button when hovered */
+.nav-btn:hover::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: radial-gradient(ellipse 150% 100% at bottom, #e6d4b377, transparent 50%);
+    transition: all 0.3s;
+}
+
+.play-btn-frame {
+    @apply mx-8 flex;
+    background: url('/images/play-button-frame-default.png') no-repeat;
+    background-size: contain;
+    width: 162px;
+    height: 40px;
+}
+
+.play-btn {
+    background: url('/images/play-button-lobby-default.png') no-repeat;
+    background-size: auto 58px;
+    /* background-position: 0 -6px; */
+    height: 60px;
+    margin-left: -20px;
+    width: 162px;
+    align-self: center;
+    @apply text-sm font-bold font-sans pl-4;
+}
+
+.play-btn:hover {
+    background: url('/images/play-button-lobby-hover.png') no-repeat;
+    background-size: auto 58px;
+}
+
+.play-btn:active {
+    background: url('/images/play-button-lobby-pressed.png') no-repeat;
+    background-size: auto 40.5px;
+    background-position: -21px 9px;
+}
+
+.play-btn:disabled {
+    background: url('/images/play-button-disabled.png') no-repeat;
+}
+
+/* light animation for logo */
+@keyframes logo-light {
+    0% {
+        filter: brightness(0.8);
+    }
+
+    50% {
+        filter: brightness(1.5);
+    }
+
+    100% {
+        filter: brightness(0.8);
+    }
+}
+
+
+.play-btn-frame .logo {
+    height: 40px;
+    width: 40px;
+    margin-left: 2px;
+    align-self: center;
+    border-radius: 999px;
+    animation: logo-light 8s infinite;
+}
+
+.user-dropdown-item {
+    @apply px-4 py-2 hover:bg-[#463714] cursor-pointer;
+}

@@ -3,7 +3,8 @@ import champions from '@renderer/public/assets/champions.json'
 import sessionService from '@renderer/src/services/session';
 import { UserDTO } from '@shared/contract';
 import { useEffect } from 'react';
-import { playSoundByChampionIdx } from '@renderer/src/services/sound';
+import { playSound, playSoundByChampionIdx } from '@renderer/src/services/sound';
+import clsx from 'clsx';
 
 type PlayerCardProps = {
   isRight?: boolean;
@@ -39,7 +40,7 @@ function PlayerCard(props: PlayerCardProps) {
     <div className={styles['player-portraits'] + " h-16 w-16 p-1"}>
       <img className='rounded-full' src={portraitURL} />
     </div>
-    <div className='px-4'>
+    <div className={clsx('px-4', styles['text-shadow'])}>
       {championName && <div className='text-lg font-bold'>{championName}</div>}
       <div>{gameID} ({userName})</div>
     </div>
@@ -91,6 +92,7 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
               return <button disabled={
                 availableChampions && !selfPlayableChampions?.includes(availableChampions[i])
               } onClick={() => {
+                playSound('/sounds/sfx-cs-button-reroll-click.ogg', 'sound');
                 if (availableChampions && availableChampions.length > i)
                   onChange?.(availableChampions[i]);
               }} key={i} className='h-12 w-12 border-slate-700 border-2 mx-2 bg-[#eeeeee33] hover:border-slate-400 hover:brightness-150 active:brightness-90 disabled:grayscale'>
@@ -102,7 +104,7 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
         </div>
           <div className='flex w-[700px] mx-auto flex-col items-center text-4xl font-bold font-sans'>
             <div className='h-1' style={{ background: '#2fb3d8', width: `${percentage}%`, transition: 'all 1s linear' }}></div>
-            <div className='mt-2'>{remainingTime}</div>
+            <div className={clsx(styles['text-shadow'], 'mt-2')}>{remainingTime}</div>
           </div>
         </>
       ) : (
@@ -118,7 +120,12 @@ export default function ({ seats, remainingTime, totalTime, finished, diceNumber
         }
       </div>
       <div className='mb-[10vh] self-end'>
-        {!finished && <button onClick={onRandom} className={styles['random-btn']}>
+        {!finished && <button onClick={() => {
+          playSound('/sounds/sfx-cs-button-reroll-click.ogg', 'sound');
+          onRandom?.();
+        }} onMouseEnter={() => {
+          playSound('/sounds/sfx-cs-button-reroll-hover.ogg', 'sound');
+        }} className={styles['random-btn']} disabled={!diceNumber}>
           <div className='flex justify-center gap-4 text-2xl font-bold'>
             <img src='/images/dice.png' />
             <span>{diceNumber}</span>

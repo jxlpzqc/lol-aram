@@ -36,11 +36,17 @@ const _leagueBridge = {
     removeOnEndGameListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
         ipcRenderer.off('league:endOfGame', listener);
     },
-    addWebSocketClosedListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
-        ipcRenderer.on('league:webSocketClosed', listener);
+    getWebSocketStatus: async () => {
+        return await ipcRenderer.invoke('league:getWebSocketStatus') as 'open' | 'close' | 'connecting';
     },
-    removeWebSocketClosedListener: (listener: (_event: IpcRendererEvent, data: any) => void) => {
-        ipcRenderer.off('league:webSocketClosed', listener);
+    addWebSocketStatusChangedListener: (listener: (_event: IpcRendererEvent, data: 'open' | 'close' | 'connecting') => void) => {
+        ipcRenderer.on('league:webSocketStatusChanged', listener);
+    },
+    removeWebSocketStatusChangedListener: (listener: (_event: IpcRendererEvent, data: 'open' | 'close' | 'connecting') => void) => {
+        ipcRenderer.off('league:webSocketStatusChanged', listener);
+    },
+    restartUI: async () => {
+        await ipcRenderer.invoke('league:restartUI');
     },
 };
 

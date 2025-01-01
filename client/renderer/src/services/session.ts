@@ -1,22 +1,29 @@
-let _registed: boolean = false;
-let _summonerId: string | null = null;
-let _realName: string | null = null;
-let _summonerName: string | null = null;
-let _sessionID: string | null = null;
-let _server: string | null = null;
+import leagueHandler from '@root/client/renderer/src/services/league';
+import { disconnectFromRoom } from './room';
+// let _registed: boolean = false;
+// let _summonerId: string | null = null;
+// let _realName: string | null = null;
+// let _summonerName: string | null = null;
+// let _sessionID: string | null = null;
+// let _server: string | null = null;
 
-export default {
-    registWeb(info: {
+const sessionService = {
+    loginWeb(info: {
         server: string,
     }) {
         if (!info.server) {
             throw new Error("请填写完整信息！");
         }
-        _registed = true;
-        _server = info.server
+        global?.sessionStorage?.setItem("registed", "true");
+        global?.sessionStorage?.setItem("server", info.server);
     },
 
-    regist(info: {
+    async loadChampions() {
+        const champions = await leagueHandler.getOwnedChampions(sessionService.summonerId!);
+        global?.sessionStorage?.setItem("champions", JSON.stringify(champions));
+    },
+
+    login(info: {
         server: string,
         sessionID: string,
         summonerId: string,
@@ -26,32 +33,41 @@ export default {
         if (!info.server || !info.sessionID || !info.summonerId || !info.realName || !info.summonerName) {
             throw new Error("请填写完整信息！");
         }
-        _registed = true;
-        _sessionID = info.sessionID;
-        _summonerId = info.summonerId;
-        _realName = info.realName;
-        _summonerName = info.summonerName;
-        _server = info.server;
+        global?.sessionStorage?.setItem("server", info.server);
+        global?.sessionStorage?.setItem("sessionID", info.sessionID);
+        global?.sessionStorage?.setItem("summonerId", info.summonerId);
+        global?.sessionStorage?.setItem("realName", info.realName);
+        global?.sessionStorage?.setItem("summonerName", info.summonerName);
+        global?.sessionStorage?.setItem("registed", "true");
 
-        globalThis?.localStorage?.setItem("server", info.server);
-        globalThis?.localStorage?.setItem("realName", info.realName);
+        global?.localStorage?.setItem("server", info.server);
+        global?.localStorage?.setItem("realName", info.realName);
+    },
+    logout() {
+        disconnectFromRoom();
+        global?.sessionStorage?.clear();
     },
     get server(): string | null {
-        return _server;
+        return global?.sessionStorage?.getItem("server");
     },
     get sessionID(): string | null {
-        return _sessionID;
+        return global?.sessionStorage?.getItem("sessionID");
     },
     get registed(): boolean {
-        return _registed;
+        return global?.sessionStorage?.getItem("registed") === "true";
     },
     get summonerId(): string | null {
-        return _summonerId;
+        return global?.sessionStorage?.getItem("summonerId");
     },
     get realName(): string | null {
-        return _realName;
+        return global?.sessionStorage?.getItem("realName");
     },
     get summonerName(): string | null {
-        return _summonerName;
+        return global?.sessionStorage?.getItem("summonerName");
     },
+    get champions(): number[] {
+        return JSON.parse(global?.sessionStorage?.getItem("champions") || "[]");
+    }
 };
+
+export default sessionService;

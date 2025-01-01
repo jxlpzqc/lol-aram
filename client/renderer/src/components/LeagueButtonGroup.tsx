@@ -1,3 +1,4 @@
+import { playSound } from '../services/sound'
 import styles from './LeagueButtonGroup.module.css'
 
 type Props = {
@@ -17,7 +18,10 @@ export default function ({ text, onCancel, onConfirm }: Props) {
   return <div className='flex items-center'>
     <button onClick={onCancel} className={styles.left}><CrossSvg /></button>
 
-    <button onClick={onConfirm} className={styles['right-container']}>
+    <button onClick={() => {
+      playSound("/sounds/sfx-uikit-magic-button-click.ogg", "sound");
+      onConfirm?.();
+    }} className={styles['right-container']}>
       <svg className='inline' style={{ marginLeft: 4, marginRight: -10, height: "calc(1em + 20px)" }} viewBox='0 0 30 100'>
         <path stroke='#0596aa' fill='transparent' strokeWidth={6} d="
       M 0 0

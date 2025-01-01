@@ -12,6 +12,10 @@
     background: no-repeat center / contain url('/images/button-find-match-down.png');
 }
 
+.random-btn:disabled {
+    background: no-repeat center / contain url('/images/button-find-match-disabled.png');
+}
+
 .random-btn img {
     height: 2rem;
 }
@@ -27,4 +31,8 @@
 .player-card-right {
     mask: linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
     text-align: right;
+}
+
+.text-shadow {
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
 }
