@@ -1,4 +1,4 @@
-import { Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, DefaultValuePipe, Get, Logger, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import * as rooms from './rooms';
 import { LeagueGameEogData, RankingDTO, RoomInListDTO, UserGameSummaryDTO, ServerInfo, NegotiateResponse, NegotiateRequest, ServerInfoBanner } from '@shared/contract';
 import { PrismaService } from './prisma.service';
@@ -9,12 +9,19 @@ const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
 
 @Controller()
 export class AppController {
+  private readonly logger = new Logger(AppController.name);
   constructor(private readonly db: PrismaService) { }
 
   @Post('negotiate')
   async negotiate(@Body() req: NegotiateRequest): Promise<NegotiateResponse> {
     // open files in assets/banners
-    const files = await fs.readdir('./assets/banners');
+    let files = [];
+    try {
+      files = await fs.readdir('./assets/banners');
+    } catch (e) {
+      this.logger.error(e)
+    }
+
     const banners: ServerInfoBanner[] = [];
 
     for (const file of files) {
