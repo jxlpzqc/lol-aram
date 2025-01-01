@@ -58,6 +58,8 @@ export function getWebSocketStatus(): 'open' | 'close' | 'connecting' {
         return 'connecting';
     } else if (_websocket?.readyState === LeagueWebSocket.CLOSED) {
         return 'close';
+    } else {
+        return 'close';
     }
 }
 
