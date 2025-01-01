@@ -14,8 +14,6 @@ import { RankScoreService } from '../rankscore.service';
 
 const DEFAULT_RANK_SCORE = 1200;
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const checkStop = (room: rooms.RoomInfo) => new Promise((resolve, reject) => room.needStop.once('stop', reject));
 const delayAndCheckStop = (room: rooms.RoomInfo, ms: number) => {
   let onStop;
   let timeout;
@@ -218,10 +216,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     while (time > 0) {
       this.emitToRoom(roomInfo, 'time', { time });
       try {
-        await Promise.race([
-          delay(1000),
-          checkStop(roomInfo)
-        ]);
+        await delayAndCheckStop(roomInfo, 1000);
       } catch (e) {
         this.logger.error("The room is maybe stopped.", e);
         roomInfo.status = 'waiting';
@@ -475,7 +470,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             cleanups.push(() => user.socket.off('end-of-game', onEndOfGame));
             user.socket.on('end-of-game', onEndOfGame);
           })),
-          checkStop(roomInfo)
+          new Promise((_, reject) => {
+            cleanups.push(() => roomInfo.needStop.off('stop', reject))
+            roomInfo.needStop.once('stop', reject);
+          }),
         ]).catch((e) => {
           this.emitToRoom(roomInfo, "executeProgress", {
             id: selfProgessID,
