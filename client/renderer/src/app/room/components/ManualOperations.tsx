@@ -60,8 +60,8 @@ export function CreateRoomManualOperation(props: CreateRoomManualOperationProps)
       <p>请创建一个这样的房间：</p>
       <p className="font-bold pt-4">房间名：{props.roomName} <button className="league-btn !text-xs inline-block ml-4" onClick={() => { copyText(props.roomName) }} >复制</button></p>
       <p className="font-bold pb-4">密码：{props.password} <button className="league-btn !text-xs inline-block ml-4" onClick={() => { copyText(props.password) }} >复制</button></p>
-      <p>在创建自定义对局时，请把您放在
-        <span className={props.team === 'red' ? 'text-red-400' : 'text-blue-400'}>{props.team === 'red' ? "红色" : "蓝色"}方</span>
+      <p>在创建自定义对局时，请加入
+        <span className={props.team === 'red' ? 'text-red-400' : 'text-blue-400'}>{props.team === 'red' ? "红色方（右侧）" : "蓝色方（左侧）"}</span>
       </p>
 
       <Helper onRetry={async () => {
@@ -96,8 +96,8 @@ export function JoinRoomManualOperation(props: JoinRoomManualOperationProps) {
       <p>请在客户端 PLAY -&gt; 加入自定义对局 中刷新房间列表，并加入以下房间 </p>
       <p className="font-bold pt-4">房间名：{props.roomName} <button className="league-btn !text-xs inline-block ml-4" onClick={() => { copyText(props.roomName) }} >复制</button></p>
       <p className="font-bold pb-4">密码：{props.password} <button className="league-btn !text-xs inline-block ml-4" onClick={() => { copyText(props.password) }} >复制</button></p>
-      <p>进入房间后，请把您放在
-        <span className={props.team === 'red' ? 'text-red-400' : 'text-blue-400'}>{props.team === 'red' ? "红色" : "蓝色"}方</span>
+      <p>进入房间后，请加入
+        <span className={props.team === 'red' ? 'text-red-400' : 'text-blue-400'}>{props.team === 'red' ? "红色方（右侧）" : "蓝色方（左侧）"}</span>
       </p>
 
       <p className="pt-4 font-bold">或者您也可以让您的好友邀请您进入到该房间中。</p>
