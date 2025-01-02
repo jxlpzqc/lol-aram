@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { setVolume as soundServiceSetVolume } from "../../../../services/sound";
+import leagueHandler from "@root/client/renderer/src/services/league";
 
 type Props = {
   onClose?: () => void;
@@ -27,10 +28,10 @@ export default function (props: Props) {
   }
 
   return (
-    <div className="h-full flex flex-col p-8">
-      <h2 className="font-bold text-2xl">设置</h2>
+    <div className="h-full flex flex-col">
+      <h2 className="font-bold text-2xl px-8 py-8">设置</h2>
 
-      <div className="*:my-2 py-8 grow overflow-auto">
+      <div className="*:my-2 grow overflow-auto px-8">
         <label className="block text-sm font-medium text-gray-100">音效音量：{~~soundVolume}</label>
         <input type="range" className="league-input-range w-full" min="0" max="100" step="1" value={soundVolume} onChange={(e) => {
           const volume = parseInt(e.target.value);
@@ -46,9 +47,17 @@ export default function (props: Props) {
           const volume = parseInt(e.target.value);
           settingVolume(volume, 'pickSound');
         }} />
+
+        <h2 className="py-4 text-xl font-bold">小工具</h2>
+        <div>
+          <button className="league-btn" onClick={() => {
+            leagueHandler.restartUI();
+          }}>重启客户端UI</button>
+        </div>
+
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center py-8 px-8">
         <button className="league-btn" onClick={props.onClose}>已完成</button>
       </div>
 
