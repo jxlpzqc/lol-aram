@@ -324,9 +324,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
             roomInfo.needStop.on('stop', onStop);
             cleanUpCallbacks.push(() => roomInfo.needStop.off('stop', onStop));
           }),
-        ]).then(() => {
+        ]).then((d: T) => {
           cleanUpCallbacks.forEach((c) => c());
-          ret[sockets.indexOf(socket)] = data;
+          ret[sockets.indexOf(socket)] = d;
           ++ready;
           if (ready === sockets.length) {
             p.message = progressMsgWhenFinish;
