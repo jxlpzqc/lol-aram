@@ -102,14 +102,23 @@ export default function RootLayout({
     }
   }, []);
 
+
+  const onDisconnect = (e: { reason: string }) => {
+    notify?.open({
+      content: "与房间连接断开，" + e.reason,
+    });
+  }
+
   useEffect(() => {
     const onRoomNeedNavigateToRoom = () => {
       router.push("/room");
     }
 
     socket?.addEventListener('needNavigateToRoom', onRoomNeedNavigateToRoom);
+    socket?.addEventListener('disconnect', onDisconnect);
     return () => {
       socket?.removeEventListener('needNavigateToRoom', onRoomNeedNavigateToRoom);
+      socket?.removeEventListener('disconnect', onDisconnect);
     }
   }, [socket]);
 

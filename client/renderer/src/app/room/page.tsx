@@ -77,12 +77,6 @@ export default function Room() {
         playSound('/sounds/sfx-cs-timer-tick-small.ogg', 'sound');
       }
     }
-    const onDisconnect = (e: { reason: string }) => {
-      notify?.open({
-        content: "连接断开：" + e.reason,
-      });
-      router.back();
-    }
 
     const onManualOperation = (e: { data: NeedManualOperationOpts }) => {
       setManualOperation(e.data);
@@ -91,14 +85,12 @@ export default function Room() {
     socket?.addEventListener("progressUpdated", onProgressUpdated);
     socket?.addEventListener("roomUpdated", onRoomUpdated);
     socket?.addEventListener("time", onTime);
-    socket?.addEventListener("disconnect", onDisconnect);
     socket?.addEventListener("needManualOperation", onManualOperation)
 
     return () => {
       socket?.removeEventListener("progressUpdated", onProgressUpdated);
       socket?.removeEventListener("roomUpdated", onRoomUpdated);
       socket?.removeEventListener("time", onTime);
-      socket?.removeEventListener("disconnect", onDisconnect);
       socket?.removeEventListener("needManualOperation", onManualOperation);
     };
 

@@ -134,7 +134,7 @@ export class RoomSocket {
       if (data === "io server disconnect") reason = "服务器已经将您移出房间";
       else if (data === "io client disconnect") reason = "您已经离开房间";
       else if (data === "ping timeout") reason = "连接超时";
-      this.socketEvents.dispatchEvent(new DisconnectEvent(data));
+      this.socketEvents.dispatchEvent(new DisconnectEvent(reason));
       disconnectFromRoom();
     });
 
