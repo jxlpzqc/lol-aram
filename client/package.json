@@ -1,6 +1,6 @@
 {
   "name": "league-of-pride",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "private": true,
   "main": "app/background.js",
   "repository": {
