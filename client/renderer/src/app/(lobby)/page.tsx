@@ -63,7 +63,9 @@ export default function Home() {
   const openPasswordModal = (roomid: string) => {
     setPasswordModalID(roomid);
     setPassword("");
-    passwordRef.current?.focus();
+    setTimeout(() => {
+      passwordRef.current?.focus();
+    }, 100);
   }
 
   const [createRoomModal, setCreateRoomModal] = useState(false);
