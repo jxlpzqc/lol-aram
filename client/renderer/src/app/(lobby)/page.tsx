@@ -1,7 +1,7 @@
 "use client"
 import { connectToRoom, getAllRooms } from "../../services/room";
 import { useRouter } from "next/navigation";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import sessionService from "../../services/session";
 import LoadingPage from "../../components/LoadingPage";
 import FailPage from "../../components/FailPage";
@@ -55,11 +55,15 @@ export default function Home() {
       userGameID: sessionService.summonerName!,
       championList: sessionService.champions,
     })
-    router.push("/room");
+    router.push("/lobby");
   }
+
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const openPasswordModal = (roomid: string) => {
     setPasswordModalID(roomid);
+    setPassword("");
+    passwordRef.current?.focus();
   }
 
   const [createRoomModal, setCreateRoomModal] = useState(false);
@@ -133,8 +137,13 @@ export default function Home() {
         <div className="p-8">
           <div className="text-lg mb-4 font-bold">输入房间密码</div>
           <div className="flex gap-4 items-center mt-8">
-            <input type="password" value={password} className="league-input grow" onChange={(e) => { setPassword(e.target.value) }} />
-            <button className="league-btn" onClick={() => { gotoRoom(passwordModalID!, "") }}>加入</button>
+            <input ref={passwordRef} onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                gotoRoom(passwordModalID!, password);
+                e.preventDefault();
+              }
+            }} type="password" value={password} className="league-input grow" onChange={(e) => { setPassword(e.target.value) }} />
+            <button className="league-btn" onClick={() => { gotoRoom(passwordModalID!, password) }}>加入</button>
           </div>
         </div>
       </LeagueModal>
