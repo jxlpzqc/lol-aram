@@ -84,8 +84,10 @@ async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue
 
     const lobbyData = await lobbyResp.json();
 
-    const isInRed = (lobbyData.gameConfig.customTeam200
-        .findIndex((x: any) => x.summonerId === currentSummonerId) !== -1);
+    const member = (lobbyData.members.find((x: any) => x.summonerId.toString() === currentSummonerId));
+    if (!member) throw new Error("未找到召唤师所在队伍！");
+    if (member.teamId !== 100 && member.teamId !== 200) throw new Error("teamId不合法！");
+    const isInRed = member.teamId === 200;
 
     if ((isInRed && team === 'blue') || (!isInRed && team === 'red')) {
         const switchTeamResp = await createHttp1Request({
