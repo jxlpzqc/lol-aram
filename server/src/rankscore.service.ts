@@ -17,7 +17,7 @@ export class RankScoreService {
    * @param {number} gameCount game count in this season
    * @param {number} scoreDifference other team - this team
    */
-  private getDelta(win: boolean, gameCount: number, scoreDifference: number) {
+  getDelta(win: boolean, gameCount: number, scoreDifference: number) {
     let d: number;
     if (win)
       d = 20 + (1 / (gameCount + 4)) * 80 + Math.max(-5, (scoreDifference) / 50)
@@ -33,6 +33,14 @@ export class RankScoreService {
    */
   async handleEndOfGameData(data: LeagueGameEogData) {
     const db = this.db;
+    if (await db.game.findUnique({
+      where: {
+        gameId: data.gameId.toString()
+      }
+    })) {
+      this.logger.error(`Game ${data.gameId} already exist, skip`)
+      return;
+    }
     // save data to game
     await db.game.create({
       data: {
@@ -43,16 +51,17 @@ export class RankScoreService {
 
     let teamRankScores = [0, 0]
 
-    for (let teamid = 0; teamid < 2; teamid++) {
-      const team = data.teams[teamid];
+    for (let i = 0; i < 2; i++) {
+      const team = data.teams[i];
       for (const player of team.players) {
         const smid = player.summonerId;
         const score = (await db.user.findUnique({
           where: {
             summonerId: smid.toString()
           }
-        }))?.rankScore || 1200;
-        teamRankScores[teamid] += score;
+        }))?.rankScore || DEFAULT_RANK_SCORE;
+        const teamId = team.teamId === 100 ? 0 : 1;
+        teamRankScores[teamId] += score;
       }
     }
 

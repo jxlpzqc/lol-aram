@@ -1,46 +1,37 @@
-#!/usr/bin/env node
-// @ts-check
+#!/usr/bin/env npx ts-node
 import { PrismaClient } from "@prisma/client";
+import { RankScoreService } from "../src/rankscore.service";
+import { PrismaService } from "../src/prisma.service";
+import { LeagueGameEogData } from "@root/shared/contract";
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "../src/app.module";
+import { Logger } from "@nestjs/common";
 
 
 const DEFAULT_RANK_SCORE = 1200;
 
-/**
- * Calculate delta score
- * @param {boolean} win the game is win
- * @param {number} gameCount game count in this season
- * @param {number} scoreDifference other team - this team
- */
-const getDelta = (win, gameCount, scoreDifference) => {
-  /** @type {number} */
-  let d;
-  if (win)
-    d = 20 + (1 / (gameCount + 4)) * 80 + Math.max(-5, (scoreDifference) / 50)
-  else
-    d = -20 + Math.min(5, (scoreDifference) / 50)
-  return Math.round(d);
-}
-
-/**
- * 
- * @param {import("@prisma/client").PrismaClient} db 
- * @param {{gameId: string, statusBlock: string}} game
- * @param {{id: string, score: number, gamecount: number}[]} users
- */
-const handleEndOfGameData = async (game, users, db) => {
+const handleEndOfGameData = async (
+  game: { gameId: string, statusBlock: string },
+  users: { id: string, score: number, gamecount: number }[],
+  db: PrismaService,
+  service: RankScoreService) => {
   // console.log(data);
 
-  /** @type {import("../../shared/contract").LeagueGameEogData} */
-  const data = JSON.parse(game.statusBlock);
+  const data: LeagueGameEogData = JSON.parse(game.statusBlock);
 
   let teamRankScores = [0, 0]
 
-  for (let teamid = 0; teamid < 2; teamid++) {
-    const team = data.teams[teamid];
+  for (let i = 0; i < 2; i++) {
+    const team = data.teams[i];
     for (const player of team.players) {
-      const smid = player.summonerId.toString();
-      const score = users.find(x => x.id == smid)?.score || DEFAULT_RANK_SCORE;
-      teamRankScores[teamid] += score;
+      const smid = player.summonerId;
+      const score = (await db.user.findUnique({
+        where: {
+          summonerId: smid.toString()
+        }
+      }))?.rankScore || DEFAULT_RANK_SCORE;
+      const teamId = team.teamId === 100 ? 0 : 1;
+      teamRankScores[teamId] += score;
     }
   }
 
@@ -56,7 +47,7 @@ const handleEndOfGameData = async (game, users, db) => {
       const redTeamScore = teamRankScores[1];
       const isBlue = team.teamId === 100;
       const scoreDifference = isBlue ? redTeamScore - blueTeamScore : blueTeamScore - redTeamScore;
-      const delta = getDelta(isWin, gameCount, scoreDifference);
+      const delta = service.getDelta(isWin, gameCount, scoreDifference);
 
 
       const newscore = (user?.score || DEFAULT_RANK_SCORE) + delta;
@@ -111,13 +102,13 @@ const handleEndOfGameData = async (game, users, db) => {
 
 async function main() {
 
-  const db = new PrismaClient({
-    // log: ["query"],
-  });
-  db.$connect();
+  const app = await NestFactory.createApplicationContext(AppModule);
+  const db = app.get(PrismaService);
+  const rankScoreService = app.get(RankScoreService);
 
   const users = await db.user.findMany();
   const initialUsers = [];
+  const logger = new Logger("RecalculateScore");
 
   for (const user of users) {
     const scoreDelta = (await db.gameUserMapping.aggregate({
@@ -137,9 +128,9 @@ async function main() {
     })
   }
 
-  console.log("Initial users and scores: ");
+  logger.log("Initial users and scores: ");
   for (const user of initialUsers) {
-    console.log(`${user.id} | ${user.name} | ${user.score}`);
+    logger.log(`${user.id} | ${user.name} | ${user.score}`);
   }
 
   const games = await db.game.findMany({
@@ -148,13 +139,14 @@ async function main() {
     }
   });
 
-  console.log("Recalculating scores for games... ");
+  logger.log("Recalculating scores for games... ");
 
   for (const game of games) {
-    await handleEndOfGameData(game, initialUsers, db);
+    logger.log(`Processing ${game.gameId}...`);
+    await handleEndOfGameData(game, initialUsers, db, rankScoreService);
   }
 
-  console.log("Recalculation completed");
+  logger.log("Recalculation completed");
 }
 
 main();
