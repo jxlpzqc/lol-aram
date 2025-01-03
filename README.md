@@ -33,8 +33,32 @@ yarn build
 
 服务器的运行可以采用以下方式
 
-```
-PORT=???? yarn start
-```
+1. 在 linux 服务器中准备 `docker` and `docker-compose-v2`
+2. 准备 `docker-compose.yml`
+  
+    方式1：使用 Docker Hub 上的镜像
+    ```yml
+    services:
+      server:
+        image: jxlpzqc/league-of-pride-server
+        ports:
+          - ${PORT}:5000
+        volumes:
+          - ${DATA_PATH}:/data
+    ```
+
+    方式2：使用本地构建的镜像，将 `docker-compose.yml` 放在 `Dockerfile` 同级下
+    ```yml
+    services:
+      server:
+        build: .
+        ports:
+          - ${PORT}:5000
+        volumes:
+          - ${DATA_PATH}:/data
+    ```
+
+3. 运行 `docker-compose up -d`
+
 
 之后，在客户端中输入服务器的地址（格式 `地址:域名`，不要加 `http://` 等前后缀）即可使用。

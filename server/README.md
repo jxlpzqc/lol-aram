@@ -1,22 +1,25 @@
-# League of PRIDE Server
+# League of PRIDE 服务器
 
-## Deploy guide
+## 开发
 
-1. prepare `docker` and `docker-compose-v2`
-2. prepare `docker-compose.yml`
+### 安装依赖
 
-```
-services:
-  server:
-    build:
-        context: ${REPO_PATH}/server
-        dockerfile: Dockerfile
-    ports:
-      - ${PORT}:5000
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - ${DATA_PATH}:/data
+```bash
+yarn
+yarn prisma generate
 ```
 
-3. run `docker-compose up -d`
+### 创建数据库环境变量
+
+保存到 `.env` 文件中
+
+```bash
+DATABASE_URL="file:./dev.sqlite"
+```
+
+### 运行
+
+```bash
+yarn start:dev
+```
+
