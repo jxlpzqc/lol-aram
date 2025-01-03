@@ -183,6 +183,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
           game: {
             time: 'desc'
           }
+        },
+        where: {
+          user: {
+            summonerId: user.user.id
+          }
         }
       });
       const lastGameWin = recentGames?.[0]?.isWin;
