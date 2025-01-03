@@ -148,7 +148,7 @@ export class AppController {
         gameId: id,
         isWin: playerDataWithWin.win,
         playerData: playerDataWithWin.player,
-        scoreDelta: gameMapping.scoreDelta,
+        scoreDelta: isHideRankScore ? 0 : gameMapping.scoreDelta,
       }
     }).filter((x) => x !== null);
   }
