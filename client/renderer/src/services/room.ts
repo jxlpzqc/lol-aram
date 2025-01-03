@@ -4,9 +4,16 @@ import { BackfillResponse, CreateRoomRequest, JoinRoomRequest, LeagueGameEogData
 import leagueHandler from "./league";
 import { v4, v4 as uuidv4 } from 'uuid';
 import sessionService from "./session";
+import { isWeb } from "./env";
+
+function getUrl(endpoint: string) {
+  if (isWeb()) return "/api" + endpoint;
+  return "//" + session.server + endpoint;
+}
+
 
 export async function negotiateWithServer(server: string, version: string) {
-  const ret = await fetch("http://" + server + "/negotiate", {
+  const ret = await fetch(getUrl("/negotiate"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -20,7 +27,7 @@ export async function negotiateWithServer(server: string, version: string) {
 }
 
 export async function backfillGame(game: LeagueGameEogData) {
-  const ret = await fetch("http://" + session.server + "/backfill", {
+  const ret = await fetch(getUrl("/backfill"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -32,25 +39,25 @@ export async function backfillGame(game: LeagueGameEogData) {
 }
 
 export async function getAllRooms(): Promise<RoomInListDTO[]> {
-  const ret = await fetch("http://" + session.server + "/rooms")
+  const ret = await fetch(getUrl("/rooms"))
   const data = await ret.json();
   return data as RoomInListDTO[];
 }
 
 export async function getRankings(): Promise<RankingDTO[]> {
-  const ret = await fetch("http://" + session.server + "/rankings")
+  const ret = await fetch(getUrl("/rankings"))
   const data = await ret.json();
   return data as RankingDTO[];
 }
 
 export async function getUserGames(userid: string): Promise<UserGameSummaryDTO[]> {
-  const ret = await fetch("http://" + session.server + `/users/${userid}/games`)
+  const ret = await fetch(getUrl(`/users/${userid}/games`))
   const data = await ret.json();
   return data as UserGameSummaryDTO[];
 }
 
 export async function getGameEog(gameid: string): Promise<LeagueGameEogData> {
-  const ret = await fetch("http://" + session.server + `/games/${gameid}`)
+  const ret = await fetch(getUrl(`/games/${gameid}`))
   const data = await ret.json();
   return data as LeagueGameEogData;
 }

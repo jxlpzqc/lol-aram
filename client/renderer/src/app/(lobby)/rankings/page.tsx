@@ -87,9 +87,6 @@ export default function RankingsPage() {
       <div className="flex gap-4 items-center">
         {message}
         <button className="league-btn" onClick={getItems}>刷新</button>
-        {isWeb() && <button className="league-btn" onClick={() => {
-          router.push("/settings");
-        }}>配置</button>}
       </div>
     }>
       {body}

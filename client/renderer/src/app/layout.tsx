@@ -44,11 +44,6 @@ export default function RootLayout({
   const [socket, setSocket] = useState(getRoomSocket());
   const [webSocketStatus, setWebSocketStatus] = useState("close" as "open" | "close" | "connecting");
 
-  if (isWeb()) {
-    const server = global.window?.localStorage.getItem("server");
-    sessionService.loginWeb({ server: server || "lol.fancybag.cn/api" });
-  }
-
   useEffect(() => {
     if (isWeb()) {
       if (pathname === "/room" || pathname === "/") {

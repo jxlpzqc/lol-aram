@@ -8,16 +8,6 @@ import { disconnectFromRoom } from './room';
 // let _server: string | null = null;
 
 const sessionService = {
-    loginWeb(info: {
-        server: string,
-    }) {
-        if (!info.server) {
-            throw new Error("请填写完整信息！");
-        }
-        global?.sessionStorage?.setItem("registed", "true");
-        global?.sessionStorage?.setItem("server", info.server);
-    },
-
     async loadChampions() {
         const champions = await leagueHandler.getOwnedChampions(sessionService.summonerId!);
         global?.sessionStorage?.setItem("champions", JSON.stringify(champions));

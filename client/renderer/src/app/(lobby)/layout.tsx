@@ -4,6 +4,7 @@ import LeagueNav from "../../components/LeagueNav"
 import Settings from "./components/Settings";
 import { useState } from "react";
 import LeagueModal from "../../components/LeagueModal";
+import { isWeb } from "../../services/env";
 
 type RouteItem = {
   href: string;
@@ -36,6 +37,10 @@ export default function ({ children }: React.PropsWithChildren<{}>) {
   }
 
   const [settingModalOpen, setSettingModalOpen] = useState(false);
+
+  if (isWeb()) {
+    return children;
+  }
 
   return <div className="h-screen flex flex-col" style={{
     background: backgroundStyle,
