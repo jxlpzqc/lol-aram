@@ -1,8 +1,9 @@
 import { Body, Controller, DefaultValuePipe, Get, Logger, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import * as rooms from './rooms';
-import { LeagueGameEogData, RankingDTO, RoomInListDTO, UserGameSummaryDTO, ServerInfo, NegotiateResponse, NegotiateRequest, ServerInfoBanner } from '@shared/contract';
+import { LeagueGameEogData, RankingDTO, RoomInListDTO, UserGameSummaryDTO, ServerInfo, NegotiateResponse, NegotiateRequest, ServerInfoBanner, BackfillResponse } from '@shared/contract';
 import { PrismaService } from './prisma.service';
 import * as fs from 'fs/promises'
+import { RankScoreService } from './rankscore.service';
 
 
 const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
@@ -10,7 +11,10 @@ const isHideRankScore = process.env.HIDE_RANKSCORE === "1" || false
 @Controller()
 export class AppController {
   private readonly logger = new Logger(AppController.name);
-  constructor(private readonly db: PrismaService) { }
+  constructor(
+    private readonly db: PrismaService,
+    private readonly rankScoreService: RankScoreService
+  ) { }
 
   @Post('negotiate')
   async negotiate(@Body() req: NegotiateRequest): Promise<NegotiateResponse> {
@@ -48,6 +52,22 @@ export class AppController {
       return { serverInfo, ok: true }
     }
     return { serverInfo, ok: false, message: "当前版本不支持，请更新到 0.4.0 以上版本" }
+  }
+
+  @Post('backfill')
+  async backfillGame(@Body() req: LeagueGameEogData): Promise<BackfillResponse> {
+    if (!req.gameId)
+      return { success: false, message: "没有游戏ID" };
+    const game = await this.db.game.findUnique({
+      where: {
+        gameId: req.gameId.toString(),
+      },
+    });
+    if (!!game)
+      return { success: false, message: "这局游戏已经存在" };
+
+    await this.rankScoreService.handleEndOfGameData(req);
+    return { success: true };
   }
 
   @Get('rooms')

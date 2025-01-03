@@ -278,3 +278,8 @@ export type NegotiateResponse = {
   message?: string;
   serverInfo: ServerInfo;
 }
+
+export type BackfillResponse = {
+  success: boolean;
+  message?: string;
+}
