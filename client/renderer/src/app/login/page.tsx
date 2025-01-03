@@ -153,12 +153,7 @@ export default function () {
 
   const regist = async () => {
     setRegistBusy(true);
-    if (isWeb()) {
-      sessionService.loginWeb({ server });
-      globalThis?.localStorage?.setItem("server", server);
-      router.replace(`/rankings`);
-      return;
-    }
+
     if (!summonerId.current) return;
     try {
       const id = summonerId.current.toString();
