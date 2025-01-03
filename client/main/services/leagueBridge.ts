@@ -1,4 +1,5 @@
 import { ipcRenderer, IpcRendererEvent } from 'electron'
+import { RecentGameData, RecentGamesResult } from './league.typings';
 
 const _leagueBridge = {
     isLeagueRunning: async () => {
@@ -48,6 +49,12 @@ const _leagueBridge = {
     restartUI: async () => {
         await ipcRenderer.invoke('league:restartUI');
     },
+    getRecentGames: async () => {
+        return await ipcRenderer.invoke('league:getRecentGames') as RecentGamesResult;
+    },
+    getGameEogInfo: async (gameid: number) => {
+        return await ipcRenderer.invoke('league:getGameEogInfo', gameid) as RecentGameData;
+    }
 };
 
 export default _leagueBridge;

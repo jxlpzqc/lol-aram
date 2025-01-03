@@ -1,7 +1,6 @@
-// @ts-nocheck
-import { authenticate, createHttp1Request, createWebSocketConnection, LeagueWebSocket } from 'league-connect';
+import { authenticate, createHttp1Request, createWebSocketConnection, Credentials, LeagueWebSocket } from 'league-connect';
 import championList from '@renderer/public/assets/champions.json';
-import { ipcMain } from 'electron';
+import { ChampionSelectSession, ChampionsMinimal, CurrentSummonerInfo, LobbyData, RecentGameData, RecentGamesResult } from './league.typings';
 
 export async function isLeagueRunning() {
     try {
@@ -16,7 +15,7 @@ export async function isLeagueRunning() {
 
 let _websocket: LeagueWebSocket | null = null;
 
-const emitWebSocketStatus = (socket: LeagueWebSocket, mainWindow: Electron.BrowserView) => {
+const emitWebSocketStatus = (socket: LeagueWebSocket, mainWindow: Electron.BrowserWindow) => {
     let status = 'close';
     if (socket.readyState === LeagueWebSocket.OPEN) {
         status = 'open';
@@ -40,9 +39,9 @@ export async function startWebSocket(mainWindow: Electron.BrowserWindow) {
     }
 
     _websocket = await createWebSocketConnection();
-    _websocket.addEventListener('open', () => emitWebSocketStatus(_websocket, mainWindow));
-    _websocket.addEventListener('close', () => emitWebSocketStatus(_websocket, mainWindow));
-    _websocket.addEventListener('error', () => emitWebSocketStatus(_websocket, mainWindow));
+    _websocket.addEventListener('open', () => emitWebSocketStatus(_websocket!, mainWindow));
+    _websocket.addEventListener('close', () => emitWebSocketStatus(_websocket!, mainWindow));
+    _websocket.addEventListener('error', () => emitWebSocketStatus(_websocket!, mainWindow));
 
     _websocket.subscribe("/lol-end-of-game/v1/eog-stats-block", (data, event) => {
         console.log("endOfGame", data);
@@ -63,7 +62,7 @@ export function getWebSocketStatus(): 'open' | 'close' | 'connecting' {
     }
 }
 
-async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue' | 'red') {
+async function ensureSummonerInTeam(credentials: Credentials, summonerID: string, team: 'blue' | 'red') {
     const currentSummonerId = summonerID;
 
     let lobbyResp = await createHttp1Request({
@@ -82,9 +81,9 @@ async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue
             throw new Error(`获取房间信息失败！${JSON.stringify(await lobbyResp.json(), null, 2)}`);
     }
 
-    const lobbyData = await lobbyResp.json();
+    const lobbyData: LobbyData = await lobbyResp.json();
 
-    const member = (lobbyData.members.find((x: any) => x.summonerId.toString() === currentSummonerId));
+    const member = (lobbyData.members.find((x) => x.summonerId.toString() === currentSummonerId));
     if (!member) throw new Error("未找到召唤师所在队伍！");
     if (member.teamId !== 100 && member.teamId !== 200) throw new Error("teamId不合法！");
     const isInRed = member.teamId === 200;
@@ -101,7 +100,7 @@ async function ensureSummonerInTeam(credentials, summonerID: string, team: 'blue
 
 }
 
-export async function createNewGame(gameName: string, password: string, summonerID, team: 'blue' | 'red' = 'blue') {
+export async function createNewGame(gameName: string, password: string, summonerID: string, team: 'blue' | 'red' = 'blue') {
     const credentials = await authenticate();
     console.log("Creating new game", gameName, password);
     const response = await createHttp1Request({
@@ -178,7 +177,7 @@ export async function joinGame(gameName: string, password: string, summonerID: s
     }, credentials);
 
     if (!joinResp.ok) {
-        if ((await joinResp.json())?.message?.includes?.('com.riotgames.platform.game.PlayerAlreadyInGameException')) {
+        if (((await joinResp.json()) as any)?.message?.includes?.('com.riotgames.platform.game.PlayerAlreadyInGameException')) {
             console.error('PlayerAlreadyInGameException: already in game');
         } else {
             throw new Error(`加入房间失败！${JSON.stringify(await joinResp.json(), null, 2)}`);
@@ -212,7 +211,7 @@ export async function getOwnedChampions(summonerID: string): Promise<number[]> {
         throw new Error(`获取英雄列表失败！${JSON.stringify(await resp.json(), null, 2)}`);
     }
 
-    const d = await resp.json();
+    const d: ChampionsMinimal[] = await resp.json();
     // console.log(d);
     return d.filter(x => x?.freeToPlay || x?.ownership?.owned)
         .map((champion: any) => championList.findIndex(x => x.id == champion.id));
@@ -229,7 +228,7 @@ export async function selectChampion(championId: number) {
         throw new Error(`获取英雄选择信息失败！${JSON.stringify(await sessionResp.json(), null, 2)}`);
     }
 
-    const sessionData = await sessionResp.json();
+    const sessionData: ChampionSelectSession = await sessionResp.json();
     // console.log(JSON.stringify(sessionData, null, 2));
     const localPlayerCellId = sessionData.localPlayerCellId;
     const phase = sessionData.timer.phase;
@@ -275,9 +274,9 @@ export async function getSummonerInfo(): Promise<{
     if (!resp.ok) {
         throw new Error(`获取召唤师信息失败！${JSON.stringify(await resp.json(), null, 2)}`);
     }
-    const d = await resp.json();
+    const d: CurrentSummonerInfo = await resp.json();
     return {
-        id: d.summonerId,
+        id: d.summonerId.toString(),
         name: d.displayName
     }
 }
@@ -291,4 +290,31 @@ export async function restartUI(): Promise<void> {
     if (!resp.ok) {
         throw new Error(`重启客户端失败！${JSON.stringify(await resp.json(), null, 2)}`);
     }
+}
+
+export async function getRecentGames(): Promise<RecentGamesResult> {
+    const credentials = await authenticate();
+
+    const resp = await createHttp1Request({
+        method: "GET",
+        url: "/lol-match-history/v1/products/lol/current-summoner/matches",
+    }, credentials);
+
+    if (!resp.ok) throw new Error(`获取最近游戏失败！${JSON.stringify(await resp.json(), null, 2)}`);
+
+    return await resp.json();
+}
+
+export async function getGameInfo(gameid: number): Promise<RecentGameData> {
+    const credentials = await authenticate();
+
+    const resp = await createHttp1Request({
+        method: "GET",
+        url: `/lol-match-history/v1/games/${gameid}`,
+    }, credentials);
+
+    if (!resp.ok) throw new Error(`获取游戏信息失败！${JSON.stringify(await resp.json(), null, 2)}`);
+
+    const rdata: RecentGameData = resp.json();
+    return rdata;
 }
