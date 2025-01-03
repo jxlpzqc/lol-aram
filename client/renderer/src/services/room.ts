@@ -326,7 +326,8 @@ export class RoomSocket {
         },
         prepare: () => {
           if (this.latestRoomInfo === null) throw new Error("No room info");
-          const gameName = this.latestRoomInfo.id;
+          // fix: when use room id, there will be duplicate rooms in league client
+          const gameName = v4();
           const password = v4().replace(/-/g, "").substring(0, 8);
           const team = this.latestRoomInfo.users.findIndex(x => x?.id == session.sessionID) < 5 ? "blue" : "red";
           console.log("create room", gameName, password);
