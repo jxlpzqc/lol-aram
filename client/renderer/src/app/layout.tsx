@@ -11,6 +11,7 @@ import { addRoomSocketChangeListener, getRoomSocket, removeRoomSocketChangeListe
 import { useNotification } from "rc-notification";
 import league from "../services/league";
 import { playSound } from "../services/sound";
+import { useModal } from "../components/LeagueModal";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,6 +38,9 @@ export default function RootLayout({
     closable: true,
     closeIcon: <img src="/images/icon-x.png" className="w-4 h-4" />,
   });
+
+  const [modals, modalsHolder] = useModal();
+
   const [socket, setSocket] = useState(getRoomSocket());
   const [webSocketStatus, setWebSocketStatus] = useState("close" as "open" | "close" | "connecting");
 
@@ -149,10 +153,12 @@ export default function RootLayout({
       >
         <Suspense>
           {contextHolder}
+          {modalsHolder}
           <GlobalContext.Provider value={{
             socket,
             webSocketStatus: webSocketStatus,
-            notify
+            notify,
+            modals
           }}>
             {children}
           </GlobalContext.Provider>
