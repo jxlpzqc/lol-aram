@@ -1,10 +1,9 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, NegotiateResponse, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
+import { BackfillResponse, CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, NegotiateResponse, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
 import leagueHandler from "./league";
 import { v4, v4 as uuidv4 } from 'uuid';
 import sessionService from "./session";
-import championList from '@renderer/public/assets/champions.json';
 
 export async function negotiateWithServer(server: string, version: string) {
   const ret = await fetch("http://" + server + "/negotiate", {
@@ -18,6 +17,18 @@ export async function negotiateWithServer(server: string, version: string) {
   });
   const data = await ret.json();
   return data as NegotiateResponse;
+}
+
+export async function backfillGame(game: LeagueGameEogData) {
+  const ret = await fetch("http://" + session.server + "/backfill", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(game),
+  });
+  const data = await ret.json();
+  return data as BackfillResponse;
 }
 
 export async function getAllRooms(): Promise<RoomInListDTO[]> {
