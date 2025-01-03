@@ -16,6 +16,7 @@ type RouteItem = {
 const routes: RouteItem[] = [
   { href: "/", backgroundImage: "/images/arcane2024_epe_background.png", showInNav: true, navText: "房间列表" },
   { href: "/rankings/", showInNav: true, navText: "天梯排行" },
+  { href: "/backfill/", showInNav: true, navText: "战绩补登" },
   { href: "/game/", showInNav: false, ownedByNavHref: "/rankings/" },
   { href: "/user/", showInNav: false, ownedByNavHref: "/rankings/" },
   { href: "/lobby/", showInNav: false, backgroundImage: "/images/background-freljord.jpg" },
