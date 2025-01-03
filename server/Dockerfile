@@ -17,4 +17,4 @@ ENV DATABASE_URL="file:/data/pride.sqlite"
 ENV LOG_OUTPUT_PATH="/data/logs"
 
 # migrate database and start the server
-CMD ["bash", "-c", "yarn prisma migrate deploy && yarn start"]
+CMD ["bash", "-c", "yarn prisma migrate deploy && yarn start:prod"]
