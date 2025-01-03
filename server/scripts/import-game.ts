@@ -1,4 +1,4 @@
-#!/usr/bin/env npx ts-node
+#!/usr/bin/env -S npx ts-node
 import { parseArgs } from "node:util";
 import { promises as fs } from "node:fs";
 import { RankScoreService } from "../src/rankscore.service";

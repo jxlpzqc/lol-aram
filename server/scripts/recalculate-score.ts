@@ -1,4 +1,4 @@
-#!/usr/bin/env npx ts-node
+#!/usr/bin/env -S npx ts-node
 import { PrismaClient } from "@prisma/client";
 import { RankScoreService } from "../src/rankscore.service";
 import { PrismaService } from "../src/prisma.service";
