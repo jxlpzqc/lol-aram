@@ -18,7 +18,7 @@ function getUrl(endpoint: string, server?: string) {
 
 function getSocketIOUrl(namespace: string) {
   const match = /(https?):\/\/([^/]+)(.+)?/.exec(session.server || "");
-  if (match === null) return "//" + session.server + namespace;
+  if (match === null) return "http://" + session.server + namespace;
   console.log(match)
 
   const [, protocal, host, _path] = match;
