@@ -1,19 +1,39 @@
 import { io, Socket } from "socket.io-client";
 import session from "./session";
-import { BackfillResponse, CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, NegotiateResponse, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
+import { BackfillReqeust, BackfillResponse, CreateRoomRequest, JoinRoomRequest, LeagueGameEogData, NegotiateResponse, ProgressDTO, RankingDTO, RoomDTO, RoomInListDTO, UserGameSummaryDTO } from '@shared/contract';
 import leagueHandler from "./league";
 import { v4, v4 as uuidv4 } from 'uuid';
 import sessionService from "./session";
 import { isWeb } from "./env";
 
-function getUrl(endpoint: string) {
+function getUrl(endpoint: string, useSSL: boolean = false, server?: string) {
   if (isWeb()) return "/api" + endpoint;
-  return "//" + session.server + endpoint;
+  const match = /(https?):\/\/([^/]+)/.exec(session.server || server || "");
+  if (match === null) {
+    const protocal = (useSSL) ? "https" : "http";
+    return `${protocal}://${server || session.server}${endpoint}`;
+  }
+  const [, protocal, host] = match;
+  return `${protocal}://${host}${endpoint}`;
+}
+
+async function request<T>(...[init, opts]: Parameters<typeof fetch>) {
+  const ret = await fetch(...[init, opts]);
+  if (ret.status < 200 || ret.status >= 300) {
+    if (ret.status === 401) throw new Error("无权限");
+    else if (ret.status === 403) throw new Error("禁止访问");
+    else if (ret.status === 404) throw new Error("未找到");
+    else if (ret.status === 500) throw new Error("服务器错误");
+    else throw new Error("未知错误");
+  }
+
+  const data: T = await ret.json();
+  return data;
 }
 
 
 export async function negotiateWithServer(server: string, version: string) {
-  const ret = await fetch(getUrl("/negotiate"), {
+  return await request<NegotiateResponse>(getUrl("/negotiate", false, server), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -22,44 +42,35 @@ export async function negotiateWithServer(server: string, version: string) {
       version,
     }),
   });
-  const data = await ret.json();
-  return data as NegotiateResponse;
 }
 
-export async function backfillGame(game: LeagueGameEogData) {
-  const ret = await fetch(getUrl("/backfill"), {
+export async function backfillGame(game: LeagueGameEogData, server: string) {
+  return await request<BackfillResponse>(getUrl("/backfill"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(game),
+    body: JSON.stringify({
+      server,
+      data: game
+    } as BackfillReqeust),
   });
-  const data = await ret.json();
-  return data as BackfillResponse;
 }
 
 export async function getAllRooms(): Promise<RoomInListDTO[]> {
-  const ret = await fetch(getUrl("/rooms"))
-  const data = await ret.json();
-  return data as RoomInListDTO[];
+  return await request<RoomInListDTO[]>(getUrl("/rooms"))
 }
 
 export async function getRankings(): Promise<RankingDTO[]> {
-  const ret = await fetch(getUrl("/rankings"))
-  const data = await ret.json();
-  return data as RankingDTO[];
+  return await request<RankingDTO[]>(getUrl("/rankings"))
 }
 
-export async function getUserGames(userid: string): Promise<UserGameSummaryDTO[]> {
-  const ret = await fetch(getUrl(`/users/${userid}/games`))
-  const data = await ret.json();
-  return data as UserGameSummaryDTO[];
+export async function getUserGames(userid: string, server: string): Promise<UserGameSummaryDTO[]> {
+  return await request(getUrl(`/games?userid=${userid}&server=${server}`))
 }
 
-export async function getGameEog(gameid: string): Promise<LeagueGameEogData> {
-  const ret = await fetch(getUrl(`/games/${gameid}`))
-  const data = await ret.json();
-  return data as LeagueGameEogData;
+export async function getGameEog(gameid: string, server: string): Promise<LeagueGameEogData> {
+  return await request(getUrl(`/games/${server}/${gameid}`))
 }
 
 type RoomUserOpts = {
@@ -67,6 +78,7 @@ type RoomUserOpts = {
   userName: string,
   userGameID: string,
   championList: number[],
+  server: string
 }
 
 type CreateRoomOpts = {
@@ -437,14 +449,15 @@ export function connectToRoom(opts: ConnectRoomOpts): RoomSocket {
     socket.internalSocket.disconnect();
     socket = null;
   }
-  socket = new RoomSocket(io(`ws://${session.server}/room`, {
+  socket = new RoomSocket(io(getUrl(`/room`), {
     query: opts.type === "join" ? {
       roomID: opts.roomID,
       id: opts.userID,
       password: opts.password,
       name: opts.userName,
       gameID: opts.userGameID,
-      champions: opts.championList
+      champions: opts.championList,
+      server: opts.server
     } : {
       roomName: opts.roomName,
       id: opts.userID,
@@ -452,7 +465,8 @@ export function connectToRoom(opts: ConnectRoomOpts): RoomSocket {
       password: opts.password,
       name: opts.userName,
       gameID: opts.userGameID,
-      champions: opts.championList
+      champions: opts.championList,
+      server: opts.server
     },
     timeout: 10000,
   }));

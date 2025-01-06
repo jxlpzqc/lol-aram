@@ -36,6 +36,7 @@ export default function ({
         userGameID: sessionService.summonerName!,
         championList: sessionService.champions,
         password: password,
+        server: sessionService.platformId!,
       })
     } catch (e) {
       setFailMsg(`创建房间失败！ ${e}`);

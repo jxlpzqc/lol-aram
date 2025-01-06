@@ -9,6 +9,7 @@ import FailPage from "../../../components/FailPage";
 import { GlobalContext } from "../../context";
 import { backfillGame as serverBackfillGame } from "@renderer/src/services/room";
 import { LeagueGameEogData } from "@root/shared/contract";
+import sessionService from "../../../services/session";
 
 export default function () {
   const [status, setStatus] = useState(0);
@@ -42,7 +43,7 @@ export default function () {
         throw new Error("只能补登自定义模式对局");
       }
 
-      const resp = await serverBackfillGame(recentGameToEogData(data))
+      const resp = await serverBackfillGame(recentGameToEogData(data), sessionService.platformId!)
 
       if (!resp.success)
         throw new Error(resp.message)

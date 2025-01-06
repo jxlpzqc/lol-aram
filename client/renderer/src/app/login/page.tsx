@@ -1,17 +1,14 @@
 'use client';
 import { useRouter } from "next/navigation";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import league from "../../services/league";
-import LoadingPage from "../../components/LoadingPage";
-import FailPage from "../../components/FailPage";
 import sessionService from "../../services/session";
-import { setVolume as soundServiceSetVolume } from '../../services/sound';
-import LeaguePage from "../../components/LeaguePage";
 import { isWeb } from "../../services/env";
 import { GlobalContext } from "../context";
-import getConfig from "next/config";
 import { negotiateWithServer } from "../../services/room";
 import { ServerInfoBanner } from '@shared/contract';
+import { platformIdToDisplayName } from "@renderer/src/utils/platformToDisplayName";
+import * as semver from 'semver';
 
 const debounce = (func: Function, delay: number, timerRef: React.MutableRefObject<any>) => {
   return function (...args: any) {
@@ -56,6 +53,12 @@ const DEFAULT_BANNERS: ServerInfoBanner[] = [
   { type: 'video', url: '/images/default-banner.webm' }
 ];
 
+function isServerNotSupported(serverVersion: string) {
+  if (!serverVersion) return true;
+  if (semver.lt(serverVersion, "0.5.0")) return true;
+  return false;
+}
+
 export default function () {
 
   const version = process.env.version;
@@ -64,7 +67,8 @@ export default function () {
   const summonerId = useRef<string | null>();
   const [realName, setRealName] = useState(globalThis?.localStorage?.getItem("realName") || "");
   const [gameID, setGameID] = useState("");
-  const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || (isWeb() ? "lol.fancybag.cn/api" : "lol.fancybag.cn:22001"));
+  const [server, setServer] = useState(globalThis?.localStorage?.getItem("server") || process.env.DEFAULT_SERVER || "");
+  const [platformId, setPlatformId] = useState<string>("");
 
   // 0 - loading, 1 - success, 2 - fail
   const [status, setStatus] = useState(0);
@@ -120,6 +124,11 @@ export default function () {
       }
 
       if (ret.ok) {
+        if (isServerNotSupported(ret.serverVersion)) {
+          setStatus(2);
+          setFailMsg(ret.message || "服务器版本过低，无法登录到当前服务器。");
+          return;
+        }
         setFailMsg(ret.message || "");
       } else {
         setStatus(2);
@@ -139,6 +148,8 @@ export default function () {
       setLoadingMsg("正在获取召唤师信息...");
       const info = await league.getSummonerInfo();
       summonerId.current = info.id;
+      const platformId = await league.getPlatformID();
+      setPlatformId(platformId);
       setGameID(info.name);
       setStatus(1);
     } catch (e) {
@@ -162,7 +173,8 @@ export default function () {
         sessionID: id,
         realName,
         summonerName: gameID,
-        summonerId: summonerId.current
+        summonerId: summonerId.current,
+        platformId
       });
 
       await sessionService.loadChampions();
@@ -203,11 +215,14 @@ export default function () {
         <input type="text" className="league-input" placeholder="请输入昵称" value={realName} onChange={(e) => {
           setRealName(e.target.value);
         }} />
-        <label className="block text-sm font-medium text-gray-100">游戏ID</label>
 
-        <input type="text" className="league-input" readOnly placeholder="请输入游戏ID" value={gameID} onChange={(e) => {
+        <label className="block text-sm font-medium text-gray-100">游戏ID</label>
+        <input type="text" className="league-input" readOnly placeholder="等待自动获取..." value={gameID} onChange={(e) => {
           setGameID(e.target.value);
         }} />
+
+        <label className="block text-sm font-medium text-gray-100">当前区服</label>
+        <input type="text" className="league-input" readOnly placeholder="等待自动获取..." value={platformIdToDisplayName(platformId)} />
 
         <div className="h-20 flex items-center">
           {

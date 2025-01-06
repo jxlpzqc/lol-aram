@@ -13,6 +13,7 @@ export default function () {
   const params = useSearchParams();
   const router = useRouter();
   const userid = params.get('userid');
+  const server = params.get('server');
   const summonerName = params.get('summonerName');
 
   const [status, setStatus] = useState(0);
@@ -26,7 +27,7 @@ export default function () {
       return;
     }
     try {
-      const res = await getUserGames(userid);
+      const res = await getUserGames(userid, server || "");
       setData(res);
       setStatus(1);
     } catch (e) {
@@ -71,7 +72,7 @@ export default function () {
       <tbody>
         {data.map((item, index) => (
           <tr className="cursor-pointer" onClick={() => {
-            router.push(`/game?gameid=${item.gameId}`);
+            router.push(`/game?gameid=${item.gameId}&server=${server}`);
           }} key={item.gameId}>
             <td>
               <GameEogChampion championId={item.playerData.championId}

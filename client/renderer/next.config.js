@@ -9,6 +9,7 @@ const nextConfig = {
   trailingSlash: true,
   env: {
     version,
+    DEFAULT_SERVER: process.env.DEFAULT_SERVER || "",
   },
   images: {
     unoptimized: true

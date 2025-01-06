@@ -16,6 +16,7 @@
     "build:web": "cross-env NEXT_PUBLIC_BUILD_TARGET=web next build ./renderer"
   },
   "dependencies": {
+    "@types/semver": "^7.5.8",
     "clsx": "^2.1.1",
     "electron-updater": "^6.3.9",
     "league-connect": "^6.0.0-rc13",

@@ -9,6 +9,7 @@ import FailPage from "../../../components/FailPage";
 import { isWeb } from "../../../services/env";
 import sessionService from '@renderer/src/services/session';
 import LeagueNav from "../../../components/LeagueNav";
+import { platformIdToDisplayName } from '../../../utils/platformToDisplayName';
 
 export default function RankingsPage() {
 
@@ -50,6 +51,7 @@ export default function RankingsPage() {
         <tr>
           <th>#</th>
           <th>游戏ID</th>
+          <th>服务器</th>
           <th className="w-10">昵称</th>
           <th>排位分</th>
           <th>游戏场次</th>
@@ -61,10 +63,11 @@ export default function RankingsPage() {
       <tbody>
         {data.map((item, index) => (
           <tr className="cursor-pointer" onClick={() => {
-            router.push(`/user?userid=${item.summonerId}&summonerName=${item.name}`);
+            router.push(`/user?userid=${encodeURIComponent(item.summonerId)}&summonerName=${encodeURIComponent(item.name)}&server=${encodeURIComponent(item.server)}`);
           }}>
             <td>{index + 1}</td>
             <td>{item.name}</td>
+            <td>{platformIdToDisplayName(item.server)}</td>
             <td className="truncate max-w-[400px]" title={item.nickname}>{item.nickname}</td>
             <td>{item.rankScore}</td>
             <td>{item.games}</td>

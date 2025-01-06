@@ -1392,6 +1392,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/semver@^7.5.8":
+  version "7.5.8"
+  resolved "https://registry.npmmirror.com/@types/semver/-/semver-7.5.8.tgz#8268a8c57a3e4abd25c165ecd36237db7948a55e"
+  integrity sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==
+
 "@types/verror@^1.10.3":
   version "1.10.10"
   resolved "https://registry.npmmirror.com/@types/verror/-/verror-1.10.10.tgz#d5a4b56abac169bfbc8b23d291363a682e6fa087"

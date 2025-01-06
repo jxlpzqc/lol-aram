@@ -19,6 +19,7 @@ const sessionService = {
         summonerId: string,
         realName: string,
         summonerName: string
+        platformId: string
     }) {
         if (!info.server || !info.sessionID || !info.summonerId || !info.realName || !info.summonerName) {
             throw new Error("请填写完整信息！");
@@ -29,6 +30,7 @@ const sessionService = {
         global?.sessionStorage?.setItem("realName", info.realName);
         global?.sessionStorage?.setItem("summonerName", info.summonerName);
         global?.sessionStorage?.setItem("registed", "true");
+        global?.sessionStorage?.setItem("platformId", info.platformId);
 
         global?.localStorage?.setItem("server", info.server);
         global?.localStorage?.setItem("realName", info.realName);
@@ -57,6 +59,9 @@ const sessionService = {
     },
     get champions(): number[] {
         return JSON.parse(global?.sessionStorage?.getItem("champions") || "[]");
+    },
+    get platformId(): string | null {
+        return global?.sessionStorage?.getItem("platformId");
     }
 };
 

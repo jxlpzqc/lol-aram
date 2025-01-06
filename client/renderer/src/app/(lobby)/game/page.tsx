@@ -13,6 +13,7 @@ export default function () {
   const params = useSearchParams();
   const router = useRouter();
   const userid = params.get('gameid');
+  const server = params.get('server');
 
   const [status, setStatus] = useState(0);
   const [failMsg, setFailMsg] = useState("");
@@ -25,7 +26,7 @@ export default function () {
       return;
     }
     try {
-      const res = await getGameEog(userid);
+      const res = await getGameEog(userid, server || "");
       setData(res);
       setStatus(1);
     } catch (e) {

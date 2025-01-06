@@ -6,13 +6,15 @@ import { useContext, useEffect, useState } from "react";
 import { GlobalContext } from "../app/context";
 import sessionService from '@renderer/src/services/session';
 import { playSound } from "../services/sound";
+import { platformIdToDisplayName } from "../utils/platformToDisplayName";
 
 function UserNavItem({
-  name, status, avatar
+  name, status, avatar, server: platformServer
 }: {
   name?: string,
   status: "open" | "close" | "connecting",
-  avatar: string
+  avatar: string,
+  server: string
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -58,10 +60,11 @@ function UserNavItem({
       </div>
       <div className={clsx("absolute top-full right-0 w-full bg-[#010a13] border-[#463714] border-2 border-solid shadow-xl shadow-black", { "hidden": !open })}>
         <ul>
+          <li className={styles["user-dropdown-item"]}>区服：{platformIdToDisplayName(platformServer)}</li>
           <li className={styles["user-dropdown-item"]} onClick={refreshChampions}>
             {championsRefresing ? "正在刷新英雄列表..." : `刷新英雄列表 (${championsNum})`}</li>
           <li className={styles["user-dropdown-item"]} onClick={() => {
-            router.push("/user/?summonerName=我&userid=" + sessionService.sessionID)
+            router.push(`/user/?server=${encodeURIComponent(platformServer)}&summonerName=我&userid=${encodeURIComponent(sessionService.sessionID || "")}`)
           }}>对战记录</li>
           <li className={styles["user-dropdown-item"]} onClick={() => {
             sessionService.logout();
@@ -154,7 +157,7 @@ export default function ({
           <li className={clsx(styles["nav-btn"])} onClick={onSettingsClick}>
             设置
           </li>
-          <UserNavItem name={sessionService.summonerName || "PRIDE 用户"} status={globalData.webSocketStatus} avatar="/images/avatar.jpg" />
+          <UserNavItem name={sessionService.summonerName || "PRIDE 用户"} status={globalData.webSocketStatus} avatar="/images/avatar.jpg" server={sessionService.platformId || ""} />
         </ul>
       }
     </div>

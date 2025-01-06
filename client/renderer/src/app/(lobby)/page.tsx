@@ -10,6 +10,7 @@ import LeagueModal from "../../components/LeagueModal";
 import CreateRoom from "./components/CreateRoom";
 import leagueHandler from "../../services/league";
 import { GlobalContext } from "../context";
+import { platformIdToDisplayName } from "../../utils/platformToDisplayName";
 
 
 export default function Home() {
@@ -54,6 +55,7 @@ export default function Home() {
       userName: sessionService.realName!,
       userGameID: sessionService.summonerName!,
       championList: sessionService.champions,
+      server: sessionService.platformId!,
     })
     router.push("/lobby");
   }
@@ -108,6 +110,7 @@ export default function Home() {
         <tr>
           <th></th>
           <th>房间名</th>
+          <th>服务器</th>
           <th>状态</th>
           <th>人数</th>
         </tr>
@@ -119,6 +122,7 @@ export default function Home() {
               <img src="/images/lock.png" className="h-4" />}
             </td>
             <td>{room.name}</td>
+            <td>{platformIdToDisplayName(room.server)}</td>
             <td>{room.status == 'waiting' ? "等待中" : "游戏中"}</td>
             <td>{room.playerNumber} / 10 </td>
           </tr>
