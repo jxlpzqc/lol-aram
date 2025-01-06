@@ -1,6 +1,6 @@
 import { authenticate, createHttp1Request, createWebSocketConnection, Credentials, LeagueWebSocket } from 'league-connect';
 import championList from '@renderer/public/assets/champions.json';
-import { ChampionSelectSession, ChampionsMinimal, CurrentSummonerInfo, LobbyData, RecentGameData, RecentGamesResult } from './league.typings';
+import { ChampionSelectSession, ChampionsMinimal, CurrentSummonerInfo, LobbyData, RecentGameData, RecentGamesResult, RsoAuthorizationResponse } from './league.typings';
 
 export async function isLeagueRunning() {
     try {
@@ -277,7 +277,7 @@ export async function getSummonerInfo(): Promise<{
     const d: CurrentSummonerInfo = await resp.json();
     return {
         id: d.summonerId.toString(),
-        name: d.displayName
+        name: d.gameName + "#" + d.tagLine
     }
 }
 
@@ -317,4 +317,17 @@ export async function getGameInfo(gameid: number): Promise<RecentGameData> {
 
     const rdata: RecentGameData = resp.json();
     return rdata;
+}
+
+export async function getPlatformID(): Promise<string | undefined> {
+    const credentials = await authenticate();
+    const resp = await createHttp1Request({
+        method: 'GET',
+        url: '/lol-rso-auth/v1/authorization',
+    }, credentials);
+    if (!resp.ok) {
+        throw new Error(`获取平台ID失败！${JSON.stringify(await resp.json(), null, 2)}`);
+    }
+    const d: RsoAuthorizationResponse = await resp.json();
+    return d.currentPlatformId;
 }

@@ -54,6 +54,9 @@ const _leagueBridge = {
     },
     getGameEogInfo: async (gameid: number) => {
         return await ipcRenderer.invoke('league:getGameEogInfo', gameid) as RecentGameData;
+    },
+    getPlatformID: async () => {
+        return await ipcRenderer.invoke('league:getPlatformID') as string;
     }
 };
 

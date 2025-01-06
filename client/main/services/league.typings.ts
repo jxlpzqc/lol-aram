@@ -435,3 +435,9 @@ export type LobbyDataMember = {
   summonerName: string;
   teamId: number;
 }
+
+export type RsoAuthorizationResponse = {
+  currentAccountId: number,
+  currentPlatformId: string,
+  subject: string
+}

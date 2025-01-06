@@ -7,7 +7,8 @@ import {
     getWebSocketStatus,
     restartUI,
     getRecentGames,
-    getGameInfo
+    getGameInfo,
+    getPlatformID
 } from './league';
 import { ipcMain } from 'electron';
 
@@ -50,6 +51,8 @@ export function registLeagueService(mainWindow: Electron.BrowserWindow) {
     ipcMain.handle('league:getGameEogInfo', async (_event, gameid: number) => {
         return await getGameInfo(gameid);
     });
-
+    ipcMain.handle('league:getPlatformID', async () => {
+        return await getPlatformID();
+    });
 }
 
