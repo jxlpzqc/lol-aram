@@ -6,15 +6,33 @@ import { v4, v4 as uuidv4 } from 'uuid';
 import sessionService from "./session";
 import { isWeb } from "./env";
 
-function getUrl(endpoint: string, useSSL: boolean = false, server?: string) {
+function getUrl(endpoint: string, server?: string) {
   if (isWeb()) return "/api" + endpoint;
-  const match = /(https?):\/\/([^/]+)/.exec(session.server || server || "");
+  const match = /(https?):\/\/(.+)/.exec(session.server || server || "");
   if (match === null) {
-    const protocal = (useSSL) ? "https" : "http";
-    return `${protocal}://${server || session.server}${endpoint}`;
+    return `http://${server || session.server}${endpoint}`;
   }
   const [, protocal, host] = match;
   return `${protocal}://${host}${endpoint}`;
+}
+
+function getSocketIOUrl(namespace: string) {
+  const match = /(https?):\/\/([^/]+)(.+)?/.exec(session.server || "");
+  if (match === null) return "//" + session.server + namespace;
+  console.log(match)
+
+  const [, protocal, host, _path] = match;
+  console.log(`${protocal}://${host}${namespace}`);
+  return `${protocal}://${host}${namespace}`;
+}
+
+
+function getSocketIOPath() {
+  const match = /(https?):\/\/([^/]+)(.+)?/.exec(session.server || "");
+  if (match === null) return "/socket.io/";
+  const [, _protocal, _host, path] = match;
+  if (!path) return "/socket.io/";
+  return `/${path}/socket.io/`;
 }
 
 async function request<T>(...[init, opts]: Parameters<typeof fetch>) {
@@ -33,7 +51,7 @@ async function request<T>(...[init, opts]: Parameters<typeof fetch>) {
 
 
 export async function negotiateWithServer(server: string, version: string) {
-  return await request<NegotiateResponse>(getUrl("/negotiate", false, server), {
+  return await request<NegotiateResponse>(getUrl("/negotiate", server), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -449,7 +467,7 @@ export function connectToRoom(opts: ConnectRoomOpts): RoomSocket {
     socket.internalSocket.disconnect();
     socket = null;
   }
-  socket = new RoomSocket(io(getUrl(`/room`), {
+  socket = new RoomSocket(io(getSocketIOUrl(`/room`), {
     query: opts.type === "join" ? {
       roomID: opts.roomID,
       id: opts.userID,
@@ -469,6 +487,7 @@ export function connectToRoom(opts: ConnectRoomOpts): RoomSocket {
       server: opts.server
     },
     timeout: 10000,
+    path: getSocketIOPath(),
   }));
 
   socketChangeEvents.dispatchEvent(new Event("change"));
