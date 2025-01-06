@@ -14,27 +14,34 @@ datasource db {
 }
 
 model User {
-  summonerId String            @id
+  summonerId String
+  server     String
   name       String
   nickname   String
   rankScore  Int               @default(1200)
   games      GameUserMapping[]
+
+  @@id([summonerId, server])
 }
 
 model Game {
-  gameId      String            @id
+  gameId      String
+  server      String
   statusBlock String
   time        DateTime          @default(now())
   users       GameUserMapping[]
+
+  @@id([gameId, server])
 }
 
 model GameUserMapping {
-  user       User    @relation(fields: [userId], references: [summonerId])
+  user       User    @relation(fields: [userId, server], references: [summonerId, server])
   userId     String
-  game       Game    @relation(fields: [gameId], references: [gameId])
+  server     String
+  game       Game    @relation(fields: [gameId, server], references: [gameId, server])
   gameId     String
   isWin      Boolean @default(true)
   scoreDelta Int     @default(0)
 
-  @@id([userId, gameId])
+  @@id([userId, gameId, server])
 }
