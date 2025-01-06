@@ -1,5 +1,5 @@
 #!/usr/bin/env -S npx ts-node
-import { PrismaClient } from "@prisma/client";
+import { Game, PrismaClient } from "@prisma/client";
 import { RankScoreService } from "../src/rankscore.service";
 import { PrismaService } from "../src/prisma.service";
 import { LeagueGameEogData } from "@root/shared/contract";
@@ -11,11 +11,13 @@ import { Logger } from "@nestjs/common";
 const DEFAULT_RANK_SCORE = 1200;
 
 const handleEndOfGameData = async (
-  game: { gameId: string, statusBlock: string },
+  game: Game,
   users: { id: string, score: number, gamecount: number }[],
   db: PrismaService,
   service: RankScoreService) => {
   // console.log(data);
+  
+  const server = game.server;
 
   const data: LeagueGameEogData = JSON.parse(game.statusBlock);
 
@@ -27,7 +29,10 @@ const handleEndOfGameData = async (
       const smid = player.summonerId;
       const score = (await db.user.findUnique({
         where: {
-          summonerId: smid.toString()
+          summonerId_server: {
+            summonerId: smid.toString(),
+            server: server
+          }
         }
       }))?.rankScore || DEFAULT_RANK_SCORE;
       const teamId = team.teamId === 100 ? 0 : 1;
@@ -54,13 +59,17 @@ const handleEndOfGameData = async (
 
       await db.user.upsert({
         where: {
-          summonerId: smid.toString()
+          summonerId_server: {
+            summonerId: smid.toString(),
+            server
+          }
         },
         create: {
           summonerId: smid.toString(),
           name: player.summonerName || "N/A",
           nickname: "",
-          rankScore: DEFAULT_RANK_SCORE + delta
+          rankScore: DEFAULT_RANK_SCORE + delta,
+          server
         },
         update: {
           rankScore: newscore
@@ -69,9 +78,10 @@ const handleEndOfGameData = async (
 
       await db.gameUserMapping.upsert({
         where: {
-          userId_gameId: {
+          userId_gameId_server: {
             gameId: game.gameId,
-            userId: smid
+            userId: smid,
+            server
           }
         },
         update: {
@@ -82,6 +92,7 @@ const handleEndOfGameData = async (
           gameId: data.gameId.toString(),
           userId: smid.toString(),
           isWin,
+          server,
           scoreDelta: delta
         }
       });

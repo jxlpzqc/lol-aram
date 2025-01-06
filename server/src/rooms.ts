@@ -23,6 +23,7 @@ export type UserAndSocket = {
 export type RoomInfo = {
   id: string;
   name: string;
+  server: string;
   waitingTime: number;
   status: RoomStatus;
   users: (UserAndSocket | null)[];
@@ -50,6 +51,7 @@ function createRoom(opts: RoomCreateOptions, user: UserInfo, socket: Socket, pas
     status: 'waiting',
     users: new Array(MAX_SEATS).fill(null),
     needStop: new EventEmitter(),
+    server: user.server,
     password
   };
   room.needStop.setMaxListeners(30);
@@ -116,6 +118,9 @@ export function joinRoom(
     }
     if (room.password && room.password !== password) {
       throw new Error('Invalid password');
+    }
+    if (room.server !== user.server) {
+      throw new Error('Server mismatch');
     }
   } else {
     if (!roomCreateOptions.name)

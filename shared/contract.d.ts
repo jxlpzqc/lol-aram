@@ -7,6 +7,7 @@ export type GameDataDTO = {
 export type UserDTO = {
   id: string | "<hidden>";
   name: string;
+  server: string;
   gameID: string;
   gameData?: GameDataDTO;
   ownedChampions?: number[];
@@ -28,6 +29,7 @@ export type RoomDTO = {
 export type RoomInListDTO = {
   id: string;
   name: string;
+  server: string;
   status: RoomStatus;
   playerNumber: number;
   hasPassword: boolean;
@@ -52,6 +54,7 @@ export type ProgressDTO = {
 export type RankingDTO = {
   summonerId: string;
   name: string;
+  server: string;
   nickname: string;
   rankScore: number;
   games: number;
@@ -277,9 +280,15 @@ export type NegotiateResponse = {
   ok: boolean;
   message?: string;
   serverInfo: ServerInfo;
+  serverVersion: string;
 }
 
 export type BackfillResponse = {
   success: boolean;
   message?: string;
 }
+
+export type BackfillReqeust = {
+  server: string
+  data: LeagueGameEogData
+} 

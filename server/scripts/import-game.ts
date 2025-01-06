@@ -12,6 +12,12 @@ async function main() {
   const rankScoreService = app.get(RankScoreService);
   const args = parseArgs({
     args: process.argv.slice(2),
+    options: {
+      server: {
+        type: "string",
+        default: "HN1"
+      },
+    },
     allowPositionals: true,
   });
 
@@ -26,7 +32,7 @@ async function main() {
   for (const file of files) {
     logger.log(`Processing ${file}...`);
     const data = JSON.parse(await fs.readFile(file, "utf-8"))
-    await rankScoreService.handleEndOfGameData(data);
+    await rankScoreService.handleEndOfGameData(data, args.values.server);
   }
 }
 

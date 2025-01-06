@@ -44,15 +44,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly db: PrismaService, private readonly rankScoreService: RankScoreService) { }
 
   private socketToUserInfo(client: Socket): rooms.UserInfo {
-    let { id, name, gameID, champions: championStr } = client.handshake.query;
+    let { id, name, gameID, champions: championStr, server } = client.handshake.query;
     if (Array.isArray(id)) id = id[0];
     if (Array.isArray(name)) name = name[0];
     if (Array.isArray(gameID)) gameID = gameID[0];
+    if (Array.isArray(server)) server = server[0];
+    if (!server) server = "HN1";
+
     let champions = [];
     champions = (championStr as unknown as string).split(',').map((c) => parseInt(c));
     return {
       id,
       gameID,
+      server,
       name,
       ownedChampions: champions
     };
@@ -67,7 +71,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private async getPlayerRankScore(info: rooms.UserInfo): Promise<number> {
     const user = await this.db.user.findUnique({
       where: {
-        summonerId: info.id
+        summonerId_server: {
+          summonerId: info.id,
+          server: info.server
+        }
       }
     });
 
@@ -82,7 +89,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // if user not exist, create user else update user
     await this.db.user.upsert({
       where: {
-        summonerId: userInfo.id
+        summonerId_server: {
+          summonerId: userInfo.id,
+          server: userInfo.server
+        }
       },
       update: {
         name: userInfo.gameID,
@@ -92,7 +102,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         summonerId: userInfo.id,
         name: userInfo.gameID,
         nickname: userInfo.name,
-        rankScore: DEFAULT_RANK_SCORE
+        rankScore: DEFAULT_RANK_SCORE,
+        server: userInfo.server
       }
     });
     userInfo.rankScore = await this.getPlayerRankScore(userInfo);
@@ -496,7 +507,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
           status: 1,
         });
 
-        await this.rankScoreService.handleEndOfGameData(gameEndData);
+        await this.rankScoreService.handleEndOfGameData(gameEndData, roomInfo.server);
       } catch (e) {
         this.logger.error(e);
       }

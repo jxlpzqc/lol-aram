@@ -31,11 +31,14 @@ export class RankScoreService {
    * @param {import("@prisma/client").PrismaClient} db 
    * @param {import("../../shared/contract").LeagueGameEogData} data 
    */
-  async handleEndOfGameData(data: LeagueGameEogData) {
+  async handleEndOfGameData(data: LeagueGameEogData, server: string) {
     const db = this.db;
     if (await db.game.findUnique({
       where: {
-        gameId: data.gameId.toString()
+        gameId_server: {
+          gameId: data.gameId.toString(),
+          server: server,
+        }
       }
     })) {
       this.logger.error(`Game ${data.gameId} already exist, skip`)
@@ -46,6 +49,7 @@ export class RankScoreService {
       data: {
         gameId: data.gameId.toString(),
         statusBlock: JSON.stringify(data),
+        server
       }
     })
 
@@ -57,7 +61,10 @@ export class RankScoreService {
         const smid = player.summonerId;
         const score = (await db.user.findUnique({
           where: {
-            summonerId: smid.toString()
+            summonerId_server: {
+              summonerId: smid.toString(),
+              server: server
+            }
           }
         }))?.rankScore || DEFAULT_RANK_SCORE;
         const teamId = team.teamId === 100 ? 0 : 1;
@@ -71,7 +78,10 @@ export class RankScoreService {
         const isWin = team.isWinningTeam;
         const gameCount = (await db.user.findUnique({
           where: {
-            summonerId: smid.toString()
+            summonerId_server: {
+              summonerId: smid.toString(),
+              server
+            }
           }
         }).games() || []).length;
 
@@ -85,13 +95,17 @@ export class RankScoreService {
 
         await db.user.upsert({
           where: {
-            summonerId: smid.toString()
+            summonerId_server: {
+              summonerId: smid.toString(),
+              server
+            }
           },
           create: {
             summonerId: smid.toString(),
             name: player.summonerName || "N/A",
             nickname: "",
-            rankScore: DEFAULT_RANK_SCORE + delta
+            rankScore: DEFAULT_RANK_SCORE + delta,
+            server
           },
           update: {
             rankScore: {
@@ -105,7 +119,8 @@ export class RankScoreService {
             gameId: data.gameId.toString(),
             userId: smid.toString(),
             isWin,
-            scoreDelta: delta
+            scoreDelta: delta,
+            server
           }
         });
 
