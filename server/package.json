@@ -1,8 +1,8 @@
 {
-  "name": "server",
+  "name": "league-of-pride-server",
   "version": "0.5.0",
-  "description": "",
-  "author": "",
+  "description": "Server side of League of Pride",
+  "author": "jxlpzqc",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
