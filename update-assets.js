@@ -155,8 +155,15 @@ async function getAllChampions() {
  */
 async function downloadAsset(path, locale = "default", destFilename) {
     const url = getUrl(path, locale).toLowerCase();
-    const res = await fetch(url);
+    let res = await fetch(url);
+    
+    if (res.status === 404 && locale !== "default") {
+        console.warn(`404 Not Found: ${url}, trying default locale...`);
+        res = await fetch(getUrl(path, "default").toLowerCase());
+    };
+
     if (res.status < 200 || res.status >= 300) {
+        console.error(`Failed to fetch ${url}, status: ${res.status}`);
         return false;
     }
 
@@ -198,7 +205,7 @@ async function getChampionResource(id) {
         id: data.id,
         name: data.name,
         alias: data.title,
-        portraitURL: pickSoundDownloaded ? `/assets/portraits/${data.id}.png` : null,
+        portraitURL: portraitDownloaded ? `/assets/portraits/${data.id}.png` : null,
         skinURL: skinDownloaded ? `/assets/skins/${data.id}.png` : null,
         pickSoundURL: pickSoundDownloaded ? `/assets/sounds/${data.id}.ogg` : null,
     };
